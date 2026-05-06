@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { db } from "../../firebase";
+import { db } from "../firebase";
 import { collection, addDoc } from "firebase/firestore";
 import { parseWageTable } from "../utils/parseWageTable";
 import { Upload, MapPin, FileText, CheckCircle, XCircle, Loader2 } from "lucide-react";
