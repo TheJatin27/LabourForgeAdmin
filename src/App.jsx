@@ -5,9 +5,11 @@ import AdminLayout from "./layout/AdminLayout";
 import Dashboard from "./pages/Dashboard";
 import States from "./pages/States";
 import LabourWages from "./pages/LabourWages";
+import EditLabourWages from "./pages/EditLabourWages";
 
 import Login from "./pages/Login";
 import ProtectedLayout from "./pages/ProtectedLayout";
+import ManageLabourWages from "./pages/ManageLabourWages";
 
 import ELibraryManager from "./pages/ELibraryManager";
 import ManageELibrary from "./pages/ManageELibrary";
@@ -47,6 +49,12 @@ export default function App() {
             element={<States />}
           />
 
+          {/* EDIT LABOUR WAGES */}
+          <Route
+            path="/admin/labour-wages/edit/:id"
+            element={<EditLabourWages />}
+          />
+
           {/* LABOUR WAGES */}
           <Route
             path="/labour-wages"
@@ -63,6 +71,12 @@ export default function App() {
           <Route
             path="/admin/e-library/manage"
             element={<ManageELibrary />}
+          />
+
+          {/* MANAGE LABOUR WAGES */}
+          <Route
+            path="/admin/labour-wages/manage"
+            element={<ManageLabourWages />}
           />
 
           {/* E-LIBRARY EDIT */}

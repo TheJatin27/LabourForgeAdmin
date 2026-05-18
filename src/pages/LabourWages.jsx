@@ -6,6 +6,7 @@ import { Upload, MapPin, FileText, CheckCircle, XCircle, Loader2 } from "lucide-
 
 export default function LabourWages() {
   const [state, setState] = useState("");
+  const [documentUrl, setDocumentUrl] = useState(""); // State for holding the official notification URL
   const [wages, setWages] = useState([]);
   const [preview, setPreview] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -38,16 +39,26 @@ export default function LabourWages() {
       return;
     }
 
-    await addDoc(collection(db, "minimumWages"), {
-      state,
-      wages,
-      createdAt: new Date(),
-    });
+    try {
+      setLoading(true);
+      await addDoc(collection(db, "minimumWages"), {
+        state: state.trim(),
+        documentUrl: documentUrl.trim(), // Saving the link alongside the dynamic dataset
+        wages,
+        createdAt: new Date(),
+      });
 
-    alert("Saved successfully");
-    setPreview(false);
-    setWages([]);
-    setState("");
+      alert("Saved successfully");
+      setPreview(false);
+      setWages([]);
+      setState("");
+      setDocumentUrl("");
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong while publishing data");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -60,8 +71,10 @@ export default function LabourWages() {
 
       {/* Step 1: Input Controls */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
-        <div className="flex flex-col md:flex-row gap-6 items-end">
-          <div className="flex-1 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+          
+          {/* State Name Input */}
+          <div className="w-full">
             <label className="block text-sm font-semibold text-gray-700 mb-2">State Name</label>
             <div className="relative">
               <MapPin className="absolute left-3 top-3 text-gray-400" size={18} />
@@ -69,12 +82,28 @@ export default function LabourWages() {
                 placeholder="e.g. Karnataka"
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
               />
             </div>
           </div>
 
-          <div className="flex-1 w-full">
+          {/* NEW: Act / Notification URL Field */}
+          <div className="w-full">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Official Act / Gazette URL</label>
+            <div className="relative">
+              <FileText className="absolute left-3 top-3 text-gray-400" size={18} />
+              <input
+                type="url"
+                placeholder="https://labour.gov.in/act-details..."
+                value={documentUrl}
+                onChange={(e) => setDocumentUrl(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Upload Excel Sheet Field */}
+          <div className="w-full">
             <label className="block text-sm font-semibold text-gray-700 mb-2">Upload Excel Sheet</label>
             <input
               type="file"
@@ -90,6 +119,7 @@ export default function LabourWages() {
                 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border border-gray-300 rounded-md"
             />
           </div>
+          
         </div>
       </div>
 

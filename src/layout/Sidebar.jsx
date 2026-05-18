@@ -40,6 +40,13 @@ export default function Sidebar() {
           to: "/labour-wages",
           label: "Labour Wages",
           icon: <IndianRupee size={20} />
+        },
+
+        // ONLY NEW OPTION ADDED HERE
+        {
+          to: "/admin/labour-wages/manage",
+          label: "Manage Wages",
+          icon: <FolderKanban size={20} />
         }
       ]
     },

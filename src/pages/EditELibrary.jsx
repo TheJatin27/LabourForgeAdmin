@@ -36,7 +36,7 @@ const EditELibrary = () => {
     title: "",
     slug: "",
     cardPoints: "",
-    includedActs: [{ actTitle: "", actContent: "" }], // Array of objects logic preserved
+    includedActs: [{ actTitle: "", actContent: "" }], 
     shortDescription: "",
     overview: "",
     bareActDescription: "",
@@ -48,6 +48,27 @@ const EditELibrary = () => {
     faqs: [{ question: "", answer: "" }],
   });
 
+  // --- UPGRADED AUTOMATED TEXT SANITIZATION UTILITY ---
+  const sanitizeContent = (content) => {
+    if (typeof content !== "string") return content;
+    
+    return content
+      // 1. Convert ALL non-breaking spaces (&nbsp;) into standard, breakable spaces
+      .replace(/&nbsp;/g, " ")
+      // 2. Strip hidden layouts, soft-hyphens, and zero-width artifacts
+      .replace(/[\u00AD\u200B]/g, "")
+      // 3. Heal any lingering word fragmentation layouts if they exist
+      .replace(/Paym\s+ent/gi, "Payment")
+      .replace(/Payme\s*-\s*nt/gi, "Payment")
+      .replace(/princi\s+ple/gi, "principle")
+      .replace(/princi\s*-\s*ple/gi, "principle")
+      .replace(/C\s+entral/gi, "Central")
+      .replace(/C\s*-\s*entral/gi, "Central")
+      .replace(/I\s*-\s*t/g, "It")
+      // 4. Flatten raw carriage linebreaks inside custom markup templates
+      .replace(/\r?\n|\r/g, " ");
+  };
+
   // FETCH EXISTING DATA
   useEffect(() => {
     const fetchData = async () => {
@@ -57,7 +78,6 @@ const EditELibrary = () => {
 
         if (snap.exists()) {
           const data = snap.data();
-          // Ensure arrays/objects exist to prevent mapping errors
           setForm({
             ...data,
             includedActs: data.includedActs || [{ actTitle: "", actContent: "" }],
@@ -182,15 +202,41 @@ const EditELibrary = () => {
     }));
   };
 
-  // UPDATE FIREBASE
+  // UPDATE FIREBASE WITH CLEANED DATA OBJECT
   const updatePage = async () => {
     try {
       setSaving(true);
+
+      const cleanedForm = {
+        title: sanitizeContent(form.title),
+        slug: sanitizeContent(form.slug).trim().toLowerCase(),
+        cardPoints: sanitizeContent(form.cardPoints),
+        shortDescription: sanitizeContent(form.shortDescription),
+        overview: sanitizeContent(form.overview),
+        bareActDescription: sanitizeContent(form.bareActDescription),
+        bareActPdf: form.bareActPdf ? form.bareActPdf.trim() : "",
+        amendments: sanitizeContent(form.amendments),
+        rules: sanitizeContent(form.rules),
+        
+        practicalNotes: (form.practicalNotes || []).map(note => sanitizeContent(note)),
+        complianceChecklist: (form.complianceChecklist || []).map(item => sanitizeContent(item)),
+        
+        includedActs: (form.includedActs || []).map(act => ({
+          actTitle: sanitizeContent(act.actTitle),
+          actContent: sanitizeContent(act.actContent)
+        })),
+        faqs: (form.faqs || []).map(faq => ({
+          question: sanitizeContent(faq.question),
+          answer: sanitizeContent(faq.answer)
+        }))
+      };
+
       const ref = doc(db, "eLibraryPages", id);
       await updateDoc(ref, {
-        ...form,
+        ...cleanedForm,
         updatedAt: new Date(),
       });
+
       alert("Page updated successfully");
       navigate("/admin/e-library/manage");
     } catch (err) {

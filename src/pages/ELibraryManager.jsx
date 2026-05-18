@@ -36,7 +36,6 @@ export default function ELibraryManager() {
     title: "",
     slug: "",
     cardPoints: "", 
-    // New logic: Array of objects for Acts shown in Sidebar/Card
     includedActs: [{ actTitle: "", actContent: "" }], 
     shortDescription: "",
     overview: "",
@@ -56,7 +55,7 @@ export default function ELibraryManager() {
     }));
   };
 
-  // --- INCLUDED ACTS LOGIC (Inter-linking) ---
+  // --- INCLUDED ACTS LOGIC ---
   const updateIncludedAct = (index, field, value) => {
     const copy = [...form.includedActs];
     copy[index][field] = value;
@@ -136,14 +135,62 @@ export default function ELibraryManager() {
     setForm((prev) => ({ ...prev, faqs: copy }));
   };
 
+  // --- UPGRADED AUTOMATED TEXT SANITIZATION UTILITY ---
+  const sanitizeContent = (content) => {
+    if (typeof content !== "string") return content;
+    
+    return content
+      // 1. Convert ALL non-breaking spaces (&nbsp;) into standard, breakable spaces
+      .replace(/&nbsp;/g, " ")
+      // 2. Strip hidden layouts, soft-hyphens, and zero-width artifacts
+      .replace(/[\u00AD\u200B]/g, "")
+      // 3. Heal any lingering word fragmentation layouts if they exist
+      .replace(/Paym\s+ent/gi, "Payment")
+      .replace(/Payme\s*-\s*nt/gi, "Payment")
+      .replace(/princi\s+ple/gi, "principle")
+      .replace(/princi\s*-\s*ple/gi, "principle")
+      .replace(/C\s+entral/gi, "Central")
+      .replace(/C\s*-\s*entral/gi, "Central")
+      .replace(/I\s*-\s*t/g, "It")
+      // 4. Flatten raw carriage linebreaks inside custom markup templates
+      .replace(/\r?\n|\r/g, " ");
+  };
+
   // --- SUBMIT LOGIC ---
   const publish = async () => {
     try {
       setLoading(true);
+
+      // Deep clean form state completely before pushing to Firestore
+      const cleanedForm = {
+        title: sanitizeContent(form.title),
+        slug: sanitizeContent(form.slug).trim().toLowerCase(),
+        cardPoints: sanitizeContent(form.cardPoints),
+        shortDescription: sanitizeContent(form.shortDescription),
+        overview: sanitizeContent(form.overview),
+        bareActDescription: sanitizeContent(form.bareActDescription),
+        bareActPdf: form.bareActPdf.trim(),
+        amendments: sanitizeContent(form.amendments),
+        rules: sanitizeContent(form.rules),
+        
+        practicalNotes: form.practicalNotes.map(note => sanitizeContent(note)),
+        complianceChecklist: form.complianceChecklist.map(item => sanitizeContent(item)),
+        
+        includedActs: form.includedActs.map(act => ({
+          actTitle: sanitizeContent(act.actTitle),
+          actContent: sanitizeContent(act.actContent)
+        })),
+        faqs: form.faqs.map(faq => ({
+          question: sanitizeContent(faq.question),
+          answer: sanitizeContent(faq.answer)
+        }))
+      };
+
       await addDoc(collection(db, "eLibraryPages"), {
-        ...form,
+        ...cleanedForm,
         createdAt: new Date(),
       });
+
       alert("E-Library Page Added Successfully");
       setForm({
         title: "",
@@ -203,7 +250,7 @@ export default function ELibraryManager() {
           </div>
         </div>
 
-        {/* 1. DETAILED ACTS SECTION (Matches screenshot list logic) */}
+        {/* 1. DETAILED ACTS SECTION */}
         <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-2">
@@ -247,7 +294,7 @@ export default function ELibraryManager() {
           </div>
         </div>
 
-        {/* CARD PREVIEW POINTS (Legacy/Text summary) */}
+        {/* CARD PREVIEW POINTS */}
         <div>
           <label className="block text-sm font-bold mb-2 text-indigo-600">
             Card Preview Points (Brief Highlights)
