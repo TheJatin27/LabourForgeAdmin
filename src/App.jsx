@@ -14,6 +14,7 @@ import ManageLabourWages from "./pages/ManageLabourWages";
 import ELibraryManager from "./pages/ELibraryManager";
 import ManageELibrary from "./pages/ManageELibrary";
 import EditELibrary from "./pages/EditELibrary";
+import ShopsEstablishmentsManager from "./pages/ShopsEstablishmentsManager";
 
 export default function App() {
 
@@ -84,6 +85,14 @@ export default function App() {
             path="/admin/e-library/edit/:id"
             element={<EditELibrary />}
           />
+
+          {/* SHOPS AND ESTABLISHMENTS */}
+          <Route
+            path="/admin/shops-establishments"
+            element={<ShopsEstablishmentsManager />}
+          />
+
+
 
         </Route>
 

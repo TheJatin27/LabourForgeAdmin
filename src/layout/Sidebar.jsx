@@ -7,7 +7,8 @@ import {
   Settings,
   ChevronRight,
   BookOpen,
-  FolderKanban
+  FolderKanban,
+  Building2
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -46,6 +47,23 @@ export default function Sidebar() {
         {
           to: "/admin/labour-wages/manage",
           label: "Manage Wages",
+          icon: <FolderKanban size={20} />
+        }
+      ]
+    },
+
+    // SHOPS & ESTABLISHMENTS CMS
+    {
+      section: "SHOPS & ESTABLISHMENTS",
+      items: [
+        {
+          to: "/admin/shops-establishments",
+          label: "Add Shops Act Page",
+          icon: <Building2 size={20} />
+        },
+        {
+          to: "/admin/shops-establishments/manage",
+          label: "Manage Shops Act",
           icon: <FolderKanban size={20} />
         }
       ]
