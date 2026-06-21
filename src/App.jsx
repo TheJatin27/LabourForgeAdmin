@@ -16,6 +16,12 @@ import ManageELibrary from "./pages/ManageELibrary";
 import EditELibrary from "./pages/EditELibrary";
 import ShopsEstablishmentsManager from "./pages/ShopsEstablishmentsManager";
 
+import StateComplianceManager from "./pages/StateComplianceManager";
+
+import ManageStateCompliance from "./pages/ManageStateCompliance";
+
+import EditStateCompliance from "./pages/EditStateCompliance";
+
 export default function App() {
 
   return (
@@ -92,6 +98,25 @@ export default function App() {
             element={<ShopsEstablishmentsManager />}
           />
 
+          {/* STATE COMPLIANCE */}
+          {/* STATE COMPLIANCE */}
+<Route 
+  path="/admin/shops-establishments/state-grid" 
+  element={<StateComplianceManager />} 
+/>
+
+          {/* MANAGE STATE COMPLIANCE */}
+          <Route
+            path="/admin/shops-establishments/manage"
+            element={<ManageStateCompliance />}
+           /> 
+
+
+{/* Paste this row alongside your other manage routes */}
+<Route 
+  path="/admin/shops-establishments/state-grid/edit/:id" 
+  element={<EditStateCompliance />} 
+/>
 
 
         </Route>
