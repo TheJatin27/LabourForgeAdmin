@@ -8,7 +8,8 @@ import {
   RotateCcw, 
   Loader2, 
   CheckCircle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Link2
 } from "lucide-react";
 
 export default function StateComplianceManager() {
@@ -16,6 +17,7 @@ export default function StateComplianceManager() {
   const [stateName, setStateName] = useState("");
   const [actTitle, setActTitle] = useState("");
   const [stateSlug, setStateSlug] = useState("");
+  const [bareActUrl, setBareActUrl] = useState(""); // State tracker hook for the PDF attachment URL
 
   // Baseline checklist matrix items with fully cleared requirement parameters
   const defaultGrid = [
@@ -88,6 +90,7 @@ export default function StateComplianceManager() {
         stateName: stateName.trim(),
         actTitle: actTitle.trim(),
         stateSlug: stateSlug.trim().toLowerCase(),
+        bareActUrl: bareActUrl.trim(), // Composed URL string saved down to database fields context
         complianceGrid: complianceGrid.filter(row => row.item.trim() !== ""),
         createdAt: new Date()
       };
@@ -100,6 +103,7 @@ export default function StateComplianceManager() {
       setStateName("");
       setActTitle("");
       setStateSlug("");
+      setBareActUrl("");
       setComplianceGrid(defaultGrid);
     } catch (err) {
       console.error("Firestore Save Error:", err);
@@ -134,49 +138,65 @@ export default function StateComplianceManager() {
       <form onSubmit={saveStateCompliance} className="space-y-8">
         
         {/* SECTION 1: STATE METADATA CONFIG */}
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-              State Identifier Name
-            </label>
-            <input
-              type="text"
-              required
-              value={stateName}
-              onChange={(e) => {
-                setStateName(e.target.value);
-                setStateSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-shops-establishments-act");
-              }}
-              placeholder="e.g. Delhi"
-              className="w-full border border-slate-300 rounded-xl p-3.5 outline-none focus:border-orange-500 font-medium"
-            />
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                State Identifier Name
+              </label>
+              <input
+                type="text"
+                required
+                value={stateName}
+                onChange={(e) => {
+                  setStateName(e.target.value);
+                  setStateSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-shops-establishments-act");
+                }}
+                placeholder="e.g. Delhi"
+                className="w-full border border-slate-300 rounded-xl p-3.5 outline-none focus:border-orange-500 font-medium text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                Official Act Legal Title
+              </label>
+              <input
+                type="text"
+                required
+                value={actTitle}
+                onChange={(e) => setActTitle(e.target.value)}
+                placeholder="e.g. Delhi Shops & Establishments Act, 1954"
+                className="w-full border border-slate-300 rounded-xl p-3.5 outline-none focus:border-orange-500 font-medium text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                Routing Target Slug Link
+              </label>
+              <input
+                type="text"
+                required
+                value={stateSlug}
+                onChange={(e) => setStateSlug(e.target.value)}
+                placeholder="delhi-shops-establishments-act"
+                className="w-full border border-slate-300 rounded-xl p-3.5 outline-none focus:border-orange-500 font-mono text-sm bg-slate-50 text-slate-600"
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-              Official Act Legal Title
+          {/* NEW ROW ADDITION: BARE ACT DOWNLOAD DOWNLOAD URL FIELDS MAPPED */}
+          <div className="border-t border-slate-100 pt-5">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <Link2 size={14} className="text-orange-500" /> Official State Bare Act PDF Link (Download Document URL)
             </label>
             <input
-              type="text"
-              required
-              value={actTitle}
-              onChange={(e) => setActTitle(e.target.value)}
-              placeholder="e.g. Delhi Shops & Establishments Act, 1954"
-              className="w-full border border-slate-300 rounded-xl p-3.5 outline-none focus:border-orange-500 font-medium"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-              Routing Target Slug Link
-            </label>
-            <input
-              type="text"
-              required
-              value={stateSlug}
-              onChange={(e) => setStateSlug(e.target.value)}
-              placeholder="delhi-shops-establishments-act"
-              className="w-full border border-slate-300 rounded-xl p-3.5 outline-none focus:border-orange-500 font-mono text-sm bg-slate-50 text-slate-600"
+              type="url"
+              value={bareActUrl}
+              onChange={(e) => setBareActUrl(e.target.value)}
+              placeholder="e.g. https://labour.delhi.gov.in/sites/default/files/delhi-shops-establishments-act-1954.pdf"
+              className="w-full border border-slate-300 rounded-xl p-3.5 outline-none focus:border-orange-500 text-sm font-semibold tracking-tight text-slate-700"
             />
           </div>
         </div>
