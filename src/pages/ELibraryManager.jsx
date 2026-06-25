@@ -19,12 +19,26 @@ import {
   Users
 } from "lucide-react";
 
-// Toolbar configuration for the Rich Text Editor
+// --- EXPANDED GLOBAL TOOLBAR CONFIGURATION FOR ALL TEXT FORMATS ---
 const modules = {
   toolbar: [
+    // Font Family Selector & Sizing Array Droplist Matrix
+    [{ font: [] }, { size: ["small", false, "large", "huge"] }],
+    
+    // Semantic Structure Headings
     [{ header: [1, 2, 3, false] }],
+    
+    // Structural Inline Emphasis Formats
     ["bold", "italic", "underline", "strike", "blockquote"],
+    
+    // TEXT COLOR PICKERS AND HIGHLIGHT COLOR ARRAYS
+    [{ color: [] }, { background: [] }], 
+    
+    // Lists, Line Indentations, Alignment Structures
     [{ list: "ordered" }, { list: "bullet" }],
+    [{ align: [] }, { indent: "-1" }, { indent: "+1" }],
+    
+    // Hyperlinks & Format Reset Core
     ["link", "clean"],
   ],
 };
@@ -135,16 +149,13 @@ export default function ELibraryManager() {
     setForm((prev) => ({ ...prev, faqs: copy }));
   };
 
-  // --- UPGRADED AUTOMATED TEXT SANITIZATION UTILITY ---
+  // --- AUTOMATED TEXT SANITIZATION UTILITY ---
   const sanitizeContent = (content) => {
     if (typeof content !== "string") return content;
     
     return content
-      // 1. Convert ALL non-breaking spaces (&nbsp;) into standard, breakable spaces
       .replace(/&nbsp;/g, " ")
-      // 2. Strip hidden layouts, soft-hyphens, and zero-width artifacts
       .replace(/[\u00AD\u200B]/g, "")
-      // 3. Heal any lingering word fragmentation layouts if they exist
       .replace(/Paym\s+ent/gi, "Payment")
       .replace(/Payme\s*-\s*nt/gi, "Payment")
       .replace(/princi\s+ple/gi, "principle")
@@ -152,7 +163,6 @@ export default function ELibraryManager() {
       .replace(/C\s+entral/gi, "Central")
       .replace(/C\s*-\s*entral/gi, "Central")
       .replace(/I\s*-\s*t/g, "It")
-      // 4. Flatten raw carriage linebreaks inside custom markup templates
       .replace(/\r?\n|\r/g, " ");
   };
 
@@ -161,7 +171,6 @@ export default function ELibraryManager() {
     try {
       setLoading(true);
 
-      // Deep clean form state completely before pushing to Firestore
       const cleanedForm = {
         title: sanitizeContent(form.title),
         slug: sanitizeContent(form.slug).trim().toLowerCase(),
@@ -282,9 +291,11 @@ export default function ELibraryManager() {
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2">Detailed Content for this Act</label>
+                  {/* INJECTED GLOBAL EXTENDED TOOLBAR */}
                   <ReactQuill 
                     placeholder="Enter detailed law content here..."
                     theme="snow" 
+                    modules={modules}
                     value={act.actContent} 
                     onChange={(val) => updateIncludedAct(index, "actContent", val)} 
                   />
@@ -380,7 +391,8 @@ export default function ELibraryManager() {
             {form.practicalNotes.map((note, index) => (
               <div key={index} className="flex gap-3 items-start">
                 <div className="flex-1">
-                  <ReactQuill theme="snow" value={note} onChange={(val) => updatePracticalNote(index, val)} />
+                  {/* INJECTED GLOBAL EXTENDED TOOLBAR */}
+                  <ReactQuill theme="snow" modules={modules} value={note} onChange={(val) => updatePracticalNote(index, val)} />
                 </div>
                 <button onClick={() => removePracticalNote(index)} className="text-red-500 mt-2 p-2 hover:bg-red-50 rounded-lg">
                   <Trash2 size={18} />
@@ -402,7 +414,8 @@ export default function ELibraryManager() {
             {form.complianceChecklist.map((item, index) => (
               <div key={index} className="flex gap-3 items-start">
                 <div className="flex-1">
-                  <ReactQuill theme="snow" value={item} onChange={(val) => updateChecklist(index, val)} />
+                  {/* INJECTED GLOBAL EXTENDED TOOLBAR */}
+                  <ReactQuill theme="snow" modules={modules} value={item} onChange={(val) => updateChecklist(index, val)} />
                 </div>
                 <button onClick={() => removeChecklist(index)} className="text-red-500 mt-2 p-2 hover:bg-red-50 rounded-lg">
                   <Trash2 size={18} />
@@ -429,9 +442,11 @@ export default function ELibraryManager() {
                   onChange={(e) => updateFaq(index, "question", e.target.value)}
                   className="w-full border border-slate-300 rounded-xl p-3 outline-none focus:border-blue-500"
                 />
+                {/* INJECTED GLOBAL EXTENDED TOOLBAR */}
                 <ReactQuill 
                   placeholder="Answer"
                   theme="snow" 
+                  modules={modules}
                   value={faq.answer} 
                   onChange={(val) => updateFaq(index, "answer", val)} 
                 />
@@ -462,10 +477,10 @@ export default function ELibraryManager() {
         </div>
       </div>
       
-      {/* Global CSS for Quill appearance */}
+      {/* Dynamic Layer Stack Z-Index Adjustment Override */}
       <style>{`
         .quill { background: white; border-radius: 0.75rem; border: 1px solid #cbd5e1 !important; }
-        .ql-toolbar { border: none !important; border-bottom: 1px solid #cbd5e1 !important; background: #f8fafc; }
+        .ql-toolbar { border: none !important; border-bottom: 1px solid #cbd5e1 !important; background: #f8fafc; z-index: 20 !important; position: relative !important; }
         .ql-container { border: none !important; min-height: 140px; font-size: 1rem; }
       `}</style>
     </div>

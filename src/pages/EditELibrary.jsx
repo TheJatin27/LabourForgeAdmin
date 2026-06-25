@@ -15,12 +15,24 @@ import {
 
 import { useNavigate, useParams } from "react-router-dom";
 
-// Toolbar configuration for the Rich Text Editor
+// --- EXPANDED GLOBAL TOOLBAR: UNLOCKS COLORS, HIGHLIGHTS, FONTS, AND SIZES ---
 const modules = {
   toolbar: [
-    [{ header: [1, 2, 3, false] }],
+    // Font Selection Dropdown & Text Size Array Matrix Selector
+    [{ font: [] }, { size: ["small", false, "large", "huge"] }],
+    
+    // Core Inline Text Emphasis Markup Options
     ["bold", "italic", "underline", "strike", "blockquote"],
+    
+    // TEXT COLORS & BACKGROUND HIGHLIGHT COLOR PICKERS 
+    // (Empty arrays generate the complete color grid swatch asset)
+    [{ color: [] }, { background: [] }], 
+    
+    // Paragraph Structures and Structural Indentation Controls
     [{ list: "ordered" }, { list: "bullet" }],
+    [{ align: [] }, { indent: "-1" }, { indent: "+1" }],
+    
+    // External Elements & Sanitization
     ["link", "clean"],
   ],
 };
@@ -48,16 +60,13 @@ const EditELibrary = () => {
     faqs: [{ question: "", answer: "" }],
   });
 
-  // --- UPGRADED AUTOMATED TEXT SANITIZATION UTILITY ---
+  // --- AUTOMATED TEXT SANITIZATION UTILITY ---
   const sanitizeContent = (content) => {
     if (typeof content !== "string") return content;
     
     return content
-      // 1. Convert ALL non-breaking spaces (&nbsp;) into standard, breakable spaces
       .replace(/&nbsp;/g, " ")
-      // 2. Strip hidden layouts, soft-hyphens, and zero-width artifacts
       .replace(/[\u00AD\u200B]/g, "")
-      // 3. Heal any lingering word fragmentation layouts if they exist
       .replace(/Paym\s+ent/gi, "Payment")
       .replace(/Payme\s*-\s*nt/gi, "Payment")
       .replace(/princi\s+ple/gi, "principle")
@@ -65,7 +74,6 @@ const EditELibrary = () => {
       .replace(/C\s+entral/gi, "Central")
       .replace(/C\s*-\s*entral/gi, "Central")
       .replace(/I\s*-\s*t/g, "It")
-      // 4. Flatten raw carriage linebreaks inside custom markup templates
       .replace(/\r?\n|\r/g, " ");
   };
 
@@ -104,7 +112,7 @@ const EditELibrary = () => {
     }));
   };
 
-  // --- INCLUDED ACTS LOGIC ---
+  // INCLUDED ACTS LOGIC
   const updateIncludedAct = (index, field, value) => {
     const copy = [...form.includedActs];
     copy[index][field] = value;
@@ -316,7 +324,8 @@ const EditELibrary = () => {
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2">Act Content</label>
-                  <ReactQuill theme="snow" value={act.actContent} onChange={(val) => updateIncludedAct(index, "actContent", val)} />
+                  {/* FIXED: Explicitly added modules config */}
+                  <ReactQuill theme="snow" modules={modules} value={act.actContent} onChange={(val) => updateIncludedAct(index, "actContent", val)} />
                 </div>
               </div>
             ))}
@@ -374,7 +383,8 @@ const EditELibrary = () => {
             {form.practicalNotes?.map((note, index) => (
               <div key={index} className="flex gap-3 items-start">
                 <div className="flex-1">
-                  <ReactQuill theme="snow" value={note} onChange={(val) => updatePracticalNote(index, val)} />
+                  {/* FIXED: Explicitly added modules config */}
+                  <ReactQuill theme="snow" modules={modules} value={note} onChange={(val) => updatePracticalNote(index, val)} />
                 </div>
                 <button onClick={() => removePracticalNote(index)} className="text-red-500 mt-2 p-2"><Trash2 size={18} /></button>
               </div>
@@ -392,7 +402,8 @@ const EditELibrary = () => {
             {form.complianceChecklist?.map((item, index) => (
               <div key={index} className="flex gap-3 items-start">
                 <div className="flex-1">
-                  <ReactQuill theme="snow" value={item} onChange={(val) => updateChecklist(index, val)} />
+                  {/* FIXED: Explicitly added modules config */}
+                  <ReactQuill theme="snow" modules={modules} value={item} onChange={(val) => updateChecklist(index, val)} />
                 </div>
                 <button onClick={() => removeChecklist(index)} className="text-red-500 mt-2 p-2"><Trash2 size={18} /></button>
               </div>
@@ -415,7 +426,8 @@ const EditELibrary = () => {
                   onChange={(e) => updateFaq(index, "question", e.target.value)}
                   className="w-full border border-slate-300 rounded-xl p-3 outline-none"
                 />
-                <ReactQuill theme="snow" value={faq.answer} onChange={(val) => updateFaq(index, "answer", val)} />
+                {/* FIXED: Explicitly added modules config */}
+                <ReactQuill theme="snow" modules={modules} value={faq.answer} onChange={(val) => updateFaq(index, "answer", val)} />
                 <button onClick={() => removeFaq(index)} className="text-red-500 text-sm font-bold">Remove FAQ</button>
               </div>
             ))}
@@ -438,9 +450,10 @@ const EditELibrary = () => {
         </div>
       </div>
 
+      {/* Optimized Layout CSS Overrides */}
       <style>{`
         .quill { background: white; border-radius: 0.75rem; border: 1px solid #cbd5e1 !important; }
-        .ql-toolbar { border: none !important; border-bottom: 1px solid #cbd5e1 !important; background: #f8fafc; }
+        .ql-toolbar { border: none !important; border-bottom: 1px solid #cbd5e1 !important; background: #f8fafc; z-index: 10; position: relative; }
         .ql-container { border: none !important; min-height: 140px; font-size: 1rem; }
       `}</style>
     </div>
