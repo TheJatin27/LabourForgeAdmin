@@ -1,14 +1,5 @@
 import * as XLSX from "xlsx";
 
-// normalize header text
-const normalize = (str = "") =>
-  str
-    .toLowerCase()
-    .replace(/₹/g, "")
-    .replace(/\(.*?\)/g, "")
-    .replace(/[^a-z]/g, "")
-    .trim();
-
 export const parseWageTable = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -19,65 +10,59 @@ export const parseWageTable = (file) => {
         const wb = XLSX.read(data, { type: "array" });
         const sheet = wb.Sheets[wb.SheetNames[0]];
 
-        // 1️⃣ read raw rows
+        // 1️⃣ Read raw rows as an array of arrays
         const raw = XLSX.utils.sheet_to_json(sheet, {
           header: 1,
           defval: "",
         });
 
-        // 2️⃣ find header row
-        let headerIndex = -1;
-        for (let i = 0; i < raw.length; i++) {
-          const rowText = raw[i].join(" ").toLowerCase();
-          if (
-            rowText.includes("class of employment") &&
-            rowText.includes("total per day")
-          ) {
-            headerIndex = i;
-            break;
-          }
+        // Clean out completely empty trailing or prefix rows if any
+        const cleanedRaw = raw.filter(row => row.some(cell => cell !== ""));
+
+        if (cleanedRaw.length < 2) {
+          throw new Error("The uploaded document does not contain enough data rows.");
         }
 
-        if (headerIndex === -1) {
-          throw new Error("Wage table header not found");
+        // 2️⃣ The first non-empty row contains our exact column headers
+        // We preserve them EXACTLY as they are written in the spreadsheet (e.g., "Total per Month (₹)")
+        const originalHeaders = cleanedRaw[0].map(h => String(h).trim()).filter(h => h !== "");
+
+        if (originalHeaders.length === 0) {
+          throw new Error("Could not extract valid column headings from the first row.");
         }
 
-        // 3️⃣ extract headers
-        const headers = raw[headerIndex].map(normalize);
+        // 3️⃣ Parse data rows dynamically based on the discovered headers
+        const rows = [];
 
-        // find column indexes
-        const colIndex = {
-          class: headers.findIndex(h => h.includes("classofemployment")),
-          basic: headers.findIndex(h => h.includes("basicpermonth")),
-          vda: headers.findIndex(h => h.includes("vdapermonth")),
-          totalMonth: headers.findIndex(h => h.includes("totalpermonth")),
-          totalDay: headers.findIndex(h => h.includes("totalperday")),
-        };
+        for (let i = 1; i < cleanedRaw.length; i++) {
+          const rowData = cleanedRaw[i];
+          
+          // Skip if the row has no content in the first primary column category
+          if (!rowData[0] && rowData[0] !== 0) continue; 
 
-        // validate columns
-        Object.entries(colIndex).forEach(([k, v]) => {
-          if (v === -1) {
-            throw new Error(`Column not found: ${k}`);
-          }
+          const rowObject = {};
+          
+          // Dynamically map cells to their respective header keys
+          originalHeaders.forEach((header, colIndex) => {
+            const cellValue = rowData[colIndex];
+            
+            // Clean up numbers disguised as strings (e.g., remove commas from "11,257.12")
+            if (typeof cellValue === "string" && !isNaN(cellValue.replace(/,/g, "")) && cellValue.trim() !== "") {
+              rowObject[header] = Number(cellValue.replace(/,/g, ""));
+            } else {
+              rowObject[header] = cellValue;
+            }
+          });
+
+          rows.push(rowObject);
+        }
+
+        // 4️⃣ Resolve with both the dynamic header order and the records array
+        resolve({
+          headers: originalHeaders,
+          rows: rows
         });
 
-        // 4️⃣ parse rows
-        const wages = [];
-
-        for (let i = headerIndex + 1; i < raw.length; i++) {
-          const row = raw[i];
-          if (!row[colIndex.class]) break;
-
-          wages.push({
-            class: row[colIndex.class],
-            basicPerMonth: Number(row[colIndex.basic]),
-            vdaPerMonth: Number(row[colIndex.vda]),
-            totalPerMonth: Number(row[colIndex.totalMonth]),
-            totalPerDay: Number(row[colIndex.totalDay]),
-          });
-        }
-
-        resolve(wages);
       } catch (err) {
         reject(err);
       }

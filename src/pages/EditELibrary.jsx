@@ -20,8 +20,12 @@ const Size = Quill.import("attributors/style/size");
 Size.whitelist = sizeWhitelist;
 Quill.register(Size, true);
 
-// 2. REGISTER ALL STANDARD WEB-SAFE FONTS
+// 2. REGISTER ALL FONTS (Standard Web-Safe + Google Fonts)
 const fontWhitelist = [
+  "inter",
+  "poppins",
+  "roboto",
+  "open-sans",
   "arial", 
   "arial-black",
   "comic-sans",
@@ -84,6 +88,18 @@ const EditELibrary = () => {
     complianceChecklist: [""],
     faqs: [{ question: "", answer: "" }],
   });
+
+  // DYNAMICALLY LOAD GOOGLE FONTS CDN ASSET STRINGS
+  useEffect(() => {
+    const linkId = "google-fonts-quill";
+    if (!document.getElementById(linkId)) {
+      const link = document.createElement("link");
+      link.id = linkId;
+      link.rel = "stylesheet";
+      link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Open+Sans:wght@300;400;600;700&family=Poppins:wght@300;400;600;700&family=Roboto:wght@300;400;500;700&display=swap";
+      document.head.appendChild(link);
+    }
+  }, []);
 
   // AUTOMATED TEXT SANITIZATION UTILITY
   const sanitizeContent = (content) => {
@@ -483,6 +499,11 @@ const EditELibrary = () => {
         .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="14px"]::before { content: "14px" !important; }
 
         /* Render Fonts styling layout internally inside picker dropdown */
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="inter"]::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="inter"]::before { content: 'Inter'; font-family: 'Inter', sans-serif; }
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="poppins"]::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="poppins"]::before { content: 'Poppins'; font-family: 'Poppins', sans-serif; }
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="roboto"]::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="roboto"]::before { content: 'Roboto'; font-family: 'Roboto', sans-serif; }
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="open-sans"]::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="open-sans"]::before { content: 'Open Sans'; font-family: 'Open Sans', sans-serif; }
+        
         .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="arial"]::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="arial"]::before { content: 'Arial'; font-family: Arial; }
         .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="arial-black"]::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="arial-black"]::before { content: 'Arial Black'; font-family: 'Arial Black'; }
         .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="comic-sans"]::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="comic-sans"]::before { content: 'Comic Sans'; font-family: 'Comic Sans MS'; }
@@ -496,6 +517,11 @@ const EditELibrary = () => {
         .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="verdana"]::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="verdana"]::before { content: 'Verdana'; font-family: Verdana; }
         
         /* Map Content container font-family fallbacks */
+        .ql-container .ql-editor .ql-font-inter { font-family: 'Inter', sans-serif; }
+        .ql-container .ql-editor .ql-font-poppins { font-family: 'Poppins', sans-serif; }
+        .ql-container .ql-editor .ql-font-roboto { font-family: 'Roboto', sans-serif; }
+        .ql-container .ql-editor .ql-font-open-sans { font-family: 'Open Sans', sans-serif; }
+
         .ql-container .ql-editor .ql-font-arial { font-family: Arial, sans-serif; }
         .ql-container .ql-editor .ql-font-arial-black { font-family: "Arial Black", Gadget, sans-serif; }
         .ql-container .ql-editor .ql-font-comic-sans { font-family: "Comic Sans MS", cursive, sans-serif; }

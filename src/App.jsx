@@ -22,6 +22,8 @@ import ManageStateCompliance from "./pages/ManageStateCompliance";
 
 import EditStateCompliance from "./pages/EditStateCompliance";
 
+import AdminHomepageManager from "./pages/AdminHomepageManager";
+
 export default function App() {
 
   return (
@@ -90,6 +92,13 @@ export default function App() {
           <Route
             path="/admin/e-library/edit/:id"
             element={<EditELibrary />}
+          />
+
+
+          {/* ADMIN HOMEPAGE */}
+          <Route
+            path="/admin/homepage"
+            element={<AdminHomepageManager />}
           />
 
           {/* SHOPS AND ESTABLISHMENTS */}
