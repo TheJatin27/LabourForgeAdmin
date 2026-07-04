@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
-import ReactQuill from "react-quill-new";
+import ReactQuill, { Quill } from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 
 import {
@@ -9,23 +9,48 @@ import {
   CheckCircle,
   Plus,
   Trash2,
-  XCircle,
   Gavel
 } from "lucide-react";
 
 import { useNavigate, useParams } from "react-router-dom";
 
-// --- EXPANDED GLOBAL TOOLBAR: UNLOCKS COLORS, HIGHLIGHTS, FONTS, AND SIZES ---
+// 1. REGISTER CUSTOM SIZES (Numeric Options like Word)
+const sizeWhitelist = ["10px", "12px", "14px", "16px", "18px", "20px", "24px", "32px"];
+const Size = Quill.import("attributors/style/size");
+Size.whitelist = sizeWhitelist;
+Quill.register(Size, true);
+
+// 2. REGISTER ALL STANDARD WEB-SAFE FONTS
+const fontWhitelist = [
+  "arial", 
+  "arial-black",
+  "comic-sans",
+  "courier-new",
+  "georgia", 
+  "impact", 
+  "lucida-sans",
+  "tahoma", 
+  "times-new-roman", 
+  "trebuchet",
+  "verdana"
+];
+const Font = Quill.import("attributors/style/font");
+Font.whitelist = fontWhitelist;
+Quill.register(Font, true);
+
+// 3. EXPANDED MODULES CONFIGURATION
 const modules = {
   toolbar: [
-    // Font Selection Dropdown & Text Size Array Matrix Selector
-    [{ font: [] }, { size: ["small", false, "large", "huge"] }],
+    // Custom Font Selection & Custom Numeric Sizes
+    [
+      { font: fontWhitelist }, 
+      { size: sizeWhitelist }
+    ],
     
     // Core Inline Text Emphasis Markup Options
     ["bold", "italic", "underline", "strike", "blockquote"],
     
-    // TEXT COLORS & BACKGROUND HIGHLIGHT COLOR PICKERS 
-    // (Empty arrays generate the complete color grid swatch asset)
+    // Text Colors & Background Highlights
     [{ color: [] }, { background: [] }], 
     
     // Paragraph Structures and Structural Indentation Controls
@@ -60,7 +85,7 @@ const EditELibrary = () => {
     faqs: [{ question: "", answer: "" }],
   });
 
-  // --- AUTOMATED TEXT SANITIZATION UTILITY ---
+  // AUTOMATED TEXT SANITIZATION UTILITY
   const sanitizeContent = (content) => {
     if (typeof content !== "string") return content;
     
@@ -324,7 +349,6 @@ const EditELibrary = () => {
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2">Act Content</label>
-                  {/* FIXED: Explicitly added modules config */}
                   <ReactQuill theme="snow" modules={modules} value={act.actContent} onChange={(val) => updateIncludedAct(index, "actContent", val)} />
                 </div>
               </div>
@@ -383,7 +407,6 @@ const EditELibrary = () => {
             {form.practicalNotes?.map((note, index) => (
               <div key={index} className="flex gap-3 items-start">
                 <div className="flex-1">
-                  {/* FIXED: Explicitly added modules config */}
                   <ReactQuill theme="snow" modules={modules} value={note} onChange={(val) => updatePracticalNote(index, val)} />
                 </div>
                 <button onClick={() => removePracticalNote(index)} className="text-red-500 mt-2 p-2"><Trash2 size={18} /></button>
@@ -402,7 +425,6 @@ const EditELibrary = () => {
             {form.complianceChecklist?.map((item, index) => (
               <div key={index} className="flex gap-3 items-start">
                 <div className="flex-1">
-                  {/* FIXED: Explicitly added modules config */}
                   <ReactQuill theme="snow" modules={modules} value={item} onChange={(val) => updateChecklist(index, val)} />
                 </div>
                 <button onClick={() => removeChecklist(index)} className="text-red-500 mt-2 p-2"><Trash2 size={18} /></button>
@@ -426,7 +448,6 @@ const EditELibrary = () => {
                   onChange={(e) => updateFaq(index, "question", e.target.value)}
                   className="w-full border border-slate-300 rounded-xl p-3 outline-none"
                 />
-                {/* FIXED: Explicitly added modules config */}
                 <ReactQuill theme="snow" modules={modules} value={faq.answer} onChange={(val) => updateFaq(index, "answer", val)} />
                 <button onClick={() => removeFaq(index)} className="text-red-500 text-sm font-bold">Remove FAQ</button>
               </div>
@@ -450,11 +471,52 @@ const EditELibrary = () => {
         </div>
       </div>
 
-      {/* Optimized Layout CSS Overrides */}
+      {/* --- CSS Overrides for Editor Custom Fonts & Numeric Sizes UI Labels --- */}
       <style>{`
         .quill { background: white; border-radius: 0.75rem; border: 1px solid #cbd5e1 !important; }
         .ql-toolbar { border: none !important; border-bottom: 1px solid #cbd5e1 !important; background: #f8fafc; z-index: 10; position: relative; }
         .ql-container { border: none !important; min-height: 140px; font-size: 1rem; }
+
+        /* Setup Text-Labels inside Size Picker Dropdowns */
+        .ql-snow .ql-picker.ql-size .ql-picker-label::before,
+        .ql-snow .ql-picker.ql-size .ql-picker-item::before { content: attr(data-value) !important; }
+        .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="14px"]::before { content: "14px" !important; }
+
+        /* Render Fonts styling layout internally inside picker dropdown */
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="arial"]::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="arial"]::before { content: 'Arial'; font-family: Arial; }
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="arial-black"]::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="arial-black"]::before { content: 'Arial Black'; font-family: 'Arial Black'; }
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="comic-sans"]::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="comic-sans"]::before { content: 'Comic Sans'; font-family: 'Comic Sans MS'; }
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="courier-new"]::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="courier-new"]::before { content: 'Courier New'; font-family: 'Courier New'; }
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="georgia"]::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="georgia"]::before { content: 'Georgia'; font-family: Georgia; }
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="impact"]::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="impact"]::before { content: 'Impact'; font-family: Impact; }
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="lucida-sans"]::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="lucida-sans"]::before { content: 'Lucida Sans'; font-family: 'Lucida Sans Unicode'; }
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="tahoma"]::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="tahoma"]::before { content: 'Tahoma'; font-family: Tahoma; }
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="times-new-roman"]::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="times-new-roman"]::before { content: 'Times New Roman'; font-family: "Times New Roman"; }
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="trebuchet"]::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="trebuchet"]::before { content: 'Trebuchet MS'; font-family: 'Trebuchet MS'; }
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="verdana"]::before, .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="verdana"]::before { content: 'Verdana'; font-family: Verdana; }
+        
+        /* Map Content container font-family fallbacks */
+        .ql-container .ql-editor .ql-font-arial { font-family: Arial, sans-serif; }
+        .ql-container .ql-editor .ql-font-arial-black { font-family: "Arial Black", Gadget, sans-serif; }
+        .ql-container .ql-editor .ql-font-comic-sans { font-family: "Comic Sans MS", cursive, sans-serif; }
+        .ql-container .ql-editor .ql-font-courier-new { font-family: "Courier New", Courier, monospace; }
+        .ql-container .ql-editor .ql-font-georgia { font-family: Georgia, serif; }
+        .ql-container .ql-editor .ql-font-impact { font-family: Impact, Charcoal, sans-serif; }
+        .ql-container .ql-editor .ql-font-lucida-sans { font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif; }
+        .ql-container .ql-editor .ql-font-tahoma { font-family: Tahoma, Geneva, sans-serif; }
+        .ql-container .ql-editor .ql-font-times-new-roman { font-family: "Times New Roman", Times, serif; }
+        .ql-container .ql-editor .ql-font-trebuchet { font-family: "Trebuchet MS", Helvetica, sans-serif; }
+        .ql-container .ql-editor .ql-font-verdana { font-family: Verdana, Geneva, sans-serif; }
+
+        /* Font Sizes Mapping styles */
+        .ql-container .ql-editor .ql-size-10px { font-size: 10px; }
+        .ql-container .ql-editor .ql-size-12px { font-size: 12px; }
+        .ql-container .ql-editor .ql-size-14px { font-size: 14px; }
+        .ql-container .ql-editor .ql-size-16px { font-size: 16px; }
+        .ql-container .ql-editor .ql-size-18px { font-size: 18px; }
+        .ql-container .ql-editor .ql-size-20px { font-size: 20px; }
+        .ql-container .ql-editor .ql-size-24px { font-size: 24px; }
+        .ql-container .ql-editor .ql-size-32px { font-size: 32px; }
       `}</style>
     </div>
   );
