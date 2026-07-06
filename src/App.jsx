@@ -24,6 +24,12 @@ import EditStateCompliance from "./pages/EditStateCompliance";
 
 import AdminHomepageManager from "./pages/AdminHomepageManager";
 
+import ProfessionalTax from "./pages/ProfessionalTax";
+
+import ManageProfessionalTaxes from "./pages/ManageProfessionalTaxes";  
+
+import EditProfessionalTax from "./pages/EditProfessionalTax";
+
 export default function App() {
 
   return (
@@ -69,6 +75,28 @@ export default function App() {
             path="/labour-wages"
             element={<LabourWages />}
           />
+
+          {/* MANAGE PROFESSIONAL TAX */}
+          <Route
+            path="/admin/professional-taxes/manage"
+            element={<ManageProfessionalTaxes />}
+          />
+
+
+          {/* EDIT PROFESSIONAL TAX */}
+          <Route
+            path="/admin/professional-taxes/edit/:id"
+            element={<EditProfessionalTax />}
+          />
+
+
+
+          {/* PROFESSIONAL TAX */}
+          <Route
+            path="/professional-tax"
+            element={<ProfessionalTax />}
+          />  
+
 
           {/* E-LIBRARY ADD */}
           <Route

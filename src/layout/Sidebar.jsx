@@ -27,6 +27,26 @@ export default function Sidebar() {
       ]
     },
 
+    //PROFESSIONAL TAX
+    {
+      section: "PROFESSIONAL TAX",
+      items: [
+        {
+          to: "/professional-tax",
+          label: "Professional Tax",
+          icon: <IndianRupee size={20} />
+        },
+
+        {
+          to: "/admin/professional-taxes/manage",
+          label: "Manage Professional Taxes",
+          icon: <FolderKanban size={20} />
+        }
+      
+
+      ]
+    },
+
     // LABOUR
     {
       section: "LABOUR",
