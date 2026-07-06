@@ -8,6 +8,7 @@ export default function LabourWages() {
   const [state, setState] = useState("");
   const [documentUrl, setDocumentUrl] = useState("");
   const [period, setPeriod] = useState(""); // State for Year / Period
+  const [notes, setNotes] = useState(""); // State for Compliance Notes / Remarks
   const [headers, setHeaders] = useState([]); // Array of column titles from the file
   const [wages, setWages] = useState([]); // Array of row objects from the file
   const [preview, setPreview] = useState(false);
@@ -57,6 +58,7 @@ export default function LabourWages() {
         state: state.trim(),
         period: period.trim(),
         documentUrl: documentUrl.trim(),
+        notes: notes.trim(), // Saves the compliance notes into the database
         headers, // Saves the dynamic columns schema array
         wages,   // Saves the dynamic rows data exactly as imported
         createdAt: new Date(),
@@ -69,6 +71,7 @@ export default function LabourWages() {
       setState("");
       setDocumentUrl("");
       setPeriod("");
+      setNotes(""); // Clear notes on successful publish
     } catch (err) {
       console.error(err);
       alert("Something went wrong while publishing data");
@@ -87,7 +90,7 @@ export default function LabourWages() {
 
       {/* Control Configuration Panel */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-6">
           
           {/* State Name */}
           <div className="w-full">
@@ -143,7 +146,23 @@ export default function LabourWages() {
               className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 rounded-md cursor-pointer"
             />
           </div>
-          
+        </div>
+
+        {/* Compliance Notes Section */}
+        <div className="border-t border-gray-100 pt-4">
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Compliance Notes / Remarks</label>
+          <div className="relative border border-gray-200 rounded-md p-3 focus-within:ring-2 focus-within:ring-blue-500">
+            <div className="absolute top-3.5 left-3 text-gray-400 pointer-events-none">
+              <FileText size={16} />
+            </div>
+            <textarea
+              rows={3}
+              placeholder="Add specific exemptions, registration limits, or custom notes..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full pl-7 text-sm text-gray-700 placeholder-gray-400 outline-none resize-y font-sans"
+            />
+          </div>
         </div>
       </div>
 

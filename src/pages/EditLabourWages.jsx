@@ -11,6 +11,7 @@ export default function EditLabourWages() {
   const [state, setState] = useState("");
   const [period, setPeriod] = useState(""); // Holds Year / Period
   const [documentUrl, setDocumentUrl] = useState("");
+  const [notes, setNotes] = useState(""); // Holds Compliance Notes / Remarks
   const [headers, setHeaders] = useState([]); // Dynamic headers from database snapshot
   const [wages, setWages] = useState([]); // Dynamic row objects
   const [loading, setLoading] = useState(true);
@@ -28,6 +29,7 @@ export default function EditLabourWages() {
           setState(data.state || "");
           setPeriod(data.period || ""); // Pull period matrix values
           setDocumentUrl(data.documentUrl || "");
+          setNotes(data.notes || ""); // Pull stored compliance notes
           setWages(data.wages || []);
           
           // Re-instantiate schema headers layout dynamically
@@ -79,6 +81,7 @@ export default function EditLabourWages() {
         state: state.trim(),
         period: period.trim(),
         documentUrl: documentUrl.trim(),
+        notes: notes.trim(), // Save the compliance notes field
         headers, // Keep column schema map records updated
         wages,   // Save dynamic modified dataset rows 
         updatedAt: new Date()
@@ -116,7 +119,7 @@ export default function EditLabourWages() {
 
       {/* Step 1: Input Metadata Control Blocks */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-6">
           
           {/* State Name Field */}
           <div className="w-full">
@@ -160,7 +163,23 @@ export default function EditLabourWages() {
               />
             </div>
           </div>
-          
+        </div>
+
+        {/* Compliance Notes / Remarks Block */}
+        <div className="border-t border-gray-100 pt-4">
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Compliance Notes / Remarks</label>
+          <div className="relative border border-gray-200 rounded-md p-3 focus-within:ring-2 focus-within:ring-blue-500">
+            <div className="absolute top-3.5 left-3 text-gray-400 pointer-events-none">
+              <FileText size={16} />
+            </div>
+            <textarea
+              rows={3}
+              placeholder="Add specific exemptions, registration limits, or custom notes..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full pl-7 text-sm text-gray-700 placeholder-gray-400 outline-none resize-y font-sans"
+            />
+          </div>
         </div>
       </div>
 
