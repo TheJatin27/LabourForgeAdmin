@@ -47,6 +47,29 @@ export default function Sidebar() {
       ]
     },
 
+
+    // LABOUR WELFARE FUNDS
+    {
+      section: "LABOUR WELFARE FUNDS",
+      items: [
+        {
+          to: "/admin/labour-welfare-funds",
+          label: "Manage Labour Welfare Funds",
+          icon: <FolderKanban size={20} />
+        },
+
+        {
+          to: "/admin/labour-welfare-funds/manage",
+          label: "Manage Labour Welfare Funds",
+          icon: <FolderKanban size={20} />
+        
+        }
+
+
+
+      ]
+    },
+
     // LABOUR
     {
       section: "LABOUR",

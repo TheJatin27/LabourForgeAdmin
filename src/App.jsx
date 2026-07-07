@@ -30,6 +30,12 @@ import ManageProfessionalTaxes from "./pages/ManageProfessionalTaxes";
 
 import EditProfessionalTax from "./pages/EditProfessionalTax";
 
+import LabourWelfareFundsAdmin from "./pages/LabourWelfareFundsAdmin";
+
+import ManagelabourWelfareFunds from "./pages/ManageLabourWelfareFunds";
+
+import EditLabourWelfareFunds from "./pages/EditLabourWelfareFunds";
+
 export default function App() {
 
   return (
@@ -70,11 +76,46 @@ export default function App() {
             element={<EditLabourWages />}
           />
 
+            {/* EDIT LABOUR WELFARE FUNDS */}
+          <Route
+            path="/admin/labour-welfare-funds/edit/:id"
+            element={<EditLabourWelfareFunds />}
+
+          />
+
+          {/* MANAGE LABOUR WELFARE FUNDS */}
+          <Route
+            path="/admin/labour-welfare-funds/manage"
+            element={<ManagelabourWelfareFunds />}
+          />
+
+
+
+
+
+
+
+          {/* MANAGE LABOUR WAGES */}
+          <Route
+            path="/admin/labour-wages/manage"
+            element={<ManageLabourWages />}
+          />
+
+
+
           {/* LABOUR WAGES */}
           <Route
             path="/labour-wages"
             element={<LabourWages />}
           />
+
+          {/* LABOUR WELFARE FUNDS */}
+          <Route
+            path="/admin/labour-welfare-funds"
+            element={<LabourWelfareFundsAdmin />}
+          />
+
+
 
           {/* MANAGE PROFESSIONAL TAX */}
           <Route
