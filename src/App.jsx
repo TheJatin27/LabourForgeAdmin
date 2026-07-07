@@ -120,7 +120,7 @@ export default function App() {
           {/* MANAGE PROFESSIONAL TAX */}
           <Route
             path="/admin/professional-taxes/manage"
-            element={<ManageProfessionalTaxes />}
+            element={<ManageProfessionalTaxes/>}
           />
 
 
