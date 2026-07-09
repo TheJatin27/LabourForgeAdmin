@@ -2,7 +2,7 @@ import { useState } from "react";
 import { db } from "../firebase";
 import { collection, addDoc } from "firebase/firestore";
 import { parseWageTable } from "../utils/parseWageTable";
-import { MapPin, FileText, CheckCircle, XCircle, Loader2, Calendar, HelpCircle, Activity, StickyNote } from "lucide-react";
+import { MapPin, FileText, CheckCircle, XCircle, Loader2, Calendar, HelpCircle, Activity, StickyNote, Save } from "lucide-react";
 
 export default function ProfessionalTaxesAdmin() {
   const [state, setState] = useState("");
@@ -72,12 +72,12 @@ export default function ProfessionalTaxesAdmin() {
         frequency: status === "Not Applicable" ? "-" : frequency, 
         documentUrl: documentUrl.trim(),
         notes: notes.trim(), 
-        headers: headers, 
-        wages: wages,   
+        headers: status === "Not Applicable" ? [] : headers, 
+        wages: status === "Not Applicable" ? [] : wages,   
         createdAt: new Date(),
       });
 
-      alert("Professional Tax layout saved and published successfully!");
+      alert("Professional Tax record saved and published successfully!");
       setPreview(false);
       setWages([]);
       setHeaders([]);
@@ -98,7 +98,7 @@ export default function ProfessionalTaxesAdmin() {
     <div className="p-6 bg-gray-50 min-h-screen font-sans text-gray-900">
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-800">Dynamic Professional Taxes Management</h2>
-        <p className="text-gray-500">Upload state slab layouts. Columns, fields, and headers adapt completely from the uploaded template.</p>
+        <p className="text-gray-500">Upload state slab layouts or record non-applicable states directly into the system.</p>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
@@ -109,7 +109,7 @@ export default function ProfessionalTaxesAdmin() {
             <div className="relative">
               <MapPin className="absolute left-3 top-3 text-gray-400" size={18} />
               <input
-                placeholder="e.g. Maharashtra"
+                placeholder="e.g. Delhi"
                 value={state}
                 onChange={(e) => setState(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
@@ -123,7 +123,12 @@ export default function ProfessionalTaxesAdmin() {
               <HelpCircle className="absolute left-3 top-3 text-gray-400" size={18} />
               <select
                 value={status}
-                onChange={(e) => setStatus(e.target.value)}
+                onChange={(e) => {
+                  setStatus(e.target.value);
+                  if (e.target.value === "Not Applicable") {
+                    setPreview(false);
+                  }
+                }}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white appearance-none"
               >
                 <option value="Applicable">Applicable</option>
@@ -178,14 +183,27 @@ export default function ProfessionalTaxesAdmin() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Upload Excel / CSV</label>
-            <input
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              onChange={handleUpload}
-              disabled={!state || !period || loading}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 rounded-md cursor-pointer bg-white"
-            />
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              {status === "Not Applicable" ? "Action" : "Upload Excel / CSV"}
+            </label>
+            {status === "Not Applicable" ? (
+              <button
+                type="button"
+                onClick={publish}
+                disabled={loading || !state}
+                className="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white font-bold rounded-md text-sm transition-colors flex items-center justify-center gap-2 shadow-sm"
+              >
+                <Save size={16} /> Save Data
+              </button>
+            ) : (
+              <input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={handleUpload}
+                disabled={!state || !period || loading}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 rounded-md cursor-pointer bg-white"
+              />
+            )}
           </div>
         </div>
 
@@ -204,7 +222,7 @@ export default function ProfessionalTaxesAdmin() {
         </div>
       </div>
 
-      {preview && headers.length > 0 && (
+      {preview && status === "Applicable" && headers.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
             <h3 className="font-bold text-gray-700">Modifying PT Layout: {state} ({period})</h3>
@@ -262,7 +280,7 @@ export default function ProfessionalTaxesAdmin() {
         <div className="fixed inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl border border-gray-100 flex flex-col items-center gap-3">
             <Loader2 className="animate-spin text-blue-600" size={32} />
-            <p className="text-sm font-bold text-gray-700">Importing Raw Sheet Architecture...</p>
+            <p className="text-sm font-bold text-gray-700">Saving & Publishing to Database...</p>
           </div>
         </div>
       )}
