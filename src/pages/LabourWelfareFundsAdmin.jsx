@@ -54,7 +54,6 @@ export default function LabourWelfareFundsAdmin() {
     try {
       setLoading(true);
       
-      // Saves cleanly inside your new collection "labourWelfareFunds"
       await addDoc(collection(db, "labourWelfareFunds"), {
         state: state.trim(),
         period: period.trim(),
@@ -63,8 +62,8 @@ export default function LabourWelfareFundsAdmin() {
         frequency: status === "Not Applicable" ? "-" : frequency, 
         documentUrl: documentUrl.trim(),
         notes: notes.trim(), 
-        headers: headers, 
-        wages: wages,   
+        headers: status === "Not Applicable" ? [] : headers, 
+        wages: status === "Not Applicable" ? [] : wages,   
         createdAt: new Date(),
       });
 
@@ -185,15 +184,31 @@ export default function LabourWelfareFundsAdmin() {
             </div>
           </div>
 
+          {/* Conditional Input Column depending on layout configuration status */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Upload Slab CSV</label>
-            <input
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              onChange={handleUpload}
-              disabled={!state || !period || loading}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 rounded-md cursor-pointer bg-white"
-            />
+            {status === "Not Applicable" ? (
+              <>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Action</label>
+                <button
+                  onClick={publish}
+                  disabled={loading}
+                  className="w-full py-2 flex items-center justify-center gap-2 bg-[#4ade80] hover:bg-[#22c55e] text-white font-bold rounded-md shadow-sm text-sm transition-colors cursor-pointer"
+                >
+                  <CheckCircle size={16} /> Save Data
+                </button>
+              </>
+            ) : (
+              <>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Upload Slab CSV</label>
+                <input
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={handleUpload}
+                  disabled={!state || !period || loading}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 rounded-md cursor-pointer bg-white"
+                />
+              </>
+            )}
           </div>
         </div>
 
@@ -203,7 +218,7 @@ export default function LabourWelfareFundsAdmin() {
             <StickyNote className="absolute left-3 top-3 text-gray-400" size={18} />
             <textarea
               rows={3}
-              placeholder="Add dynamic exclusions or structural execution criteria..."
+              placeholder="Add specific exemptions, registration limits, or custom notes..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white resize-y font-mono"
@@ -212,7 +227,7 @@ export default function LabourWelfareFundsAdmin() {
         </div>
       </div>
 
-      {preview && headers.length > 0 && (
+      {preview && headers.length > 0 && status === "Applicable" && (
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
             <h3 className="font-bold text-gray-700">Modifying LWF Layout: {state} ({period})</h3>
@@ -270,7 +285,7 @@ export default function LabourWelfareFundsAdmin() {
         <div className="fixed inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl border border-gray-100 flex flex-col items-center gap-3">
             <Loader2 className="animate-spin text-blue-600" size={32} />
-            <p className="text-sm font-bold text-gray-700">Importing Raw Sheet Architecture...</p>
+            <p className="text-sm font-bold text-gray-700">Processing Configuration...</p>
           </div>
         </div>
       )}
