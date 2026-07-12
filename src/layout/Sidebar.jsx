@@ -27,6 +27,27 @@ export default function Sidebar() {
       ]
     },
 
+
+    //News
+    {
+      section: "NEWS",
+      items: [
+        {
+          to: "/admin/add-news",
+          label: "Add News",
+          icon: <FileSpreadsheet size={20} />
+        },
+
+        {
+          to: "/admin/news/manage",
+          label: "Manage News",
+          icon: <FolderKanban size={20} />
+        }
+
+      ]
+    },
+
+
     //PROFESSIONAL TAX
     {
       section: "PROFESSIONAL TAX",

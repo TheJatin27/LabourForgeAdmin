@@ -36,6 +36,12 @@ import ManagelabourWelfareFunds from "./pages/ManageLabourWelfareFunds";
 
 import EditLabourWelfareFunds from "./pages/EditLabourWelfareFunds";
 
+import AddNews from "./pages/AddNews";
+
+import ManageNews from "./pages/ManageNews";
+
+import EditNews from "./pages/EditNews";
+
 export default function App() {
 
   return (
@@ -90,6 +96,24 @@ export default function App() {
           />
 
 
+
+          {/* ADD NEWS */}
+          <Route
+            path="/admin/add-news"
+            element={<AddNews />}
+          />
+
+          {/* MANAGE NEWS */}
+          <Route
+            path="/admin/news/manage"
+            element={<ManageNews />}
+          />
+          
+          {/* EDIT NEWS */}
+          <Route
+            path="/admin/news/edit/:id"
+            element={<EditNews />}
+          />
 
 
 
