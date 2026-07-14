@@ -23,9 +23,17 @@ export default function Sidebar() {
           to: "/",
           label: "Dashboard",
           icon: <LayoutDashboard size={20} />
+        },
+
+        {
+          to: "/admin/queries/manage",
+          label: "Manage Queries",
+          icon: <FolderKanban size={20} />
         }
       ]
     },
+
+
 
 
     //News

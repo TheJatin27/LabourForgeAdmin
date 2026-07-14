@@ -42,6 +42,8 @@ import ManageNews from "./pages/ManageNews";
 
 import EditNews from "./pages/EditNews";
 
+import ManageQueries from "./pages/ManageQueries";
+
 export default function App() {
 
   return (
@@ -68,6 +70,12 @@ export default function App() {
           <Route
             path="/"
             element={<Dashboard />}
+          />
+
+          {/* QUERIES */}
+          <Route
+            path="/admin/queries/manage"
+            element={<ManageQueries />}
           />
 
           {/* STATES */}
