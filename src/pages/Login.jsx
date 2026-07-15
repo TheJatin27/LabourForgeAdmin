@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../firebase";
 import { useNavigate } from "react-router-dom";
+
+const ADMIN_UID = "i41uTlo0nIhJO7cF07sxWk4ViSI3";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -10,9 +13,43 @@ export default function Login() {
 
   const login = async () => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      const user = userCredential.user;
+
+      // Check UID
+      if (user.uid !== ADMIN_UID) {
+        await signOut(auth);
+        alert("Access Denied! Only admin can login.");
+        return;
+      }
+
+      // Check Firestore admin document
+      const adminRef = doc(db, "admin", user.uid);
+      const adminSnap = await getDoc(adminRef);
+
+      if (!adminSnap.exists()) {
+        await signOut(auth);
+        alert("Admin record not found.");
+        return;
+      }
+
+      const adminData = adminSnap.data();
+
+      if (adminData.role !== "admin") {
+        await signOut(auth);
+        alert("You are not authorized.");
+        return;
+      }
+
+      // Everything verified
       navigate("/");
     } catch (err) {
+      console.error(err);
       alert("Invalid credentials");
     }
   };
