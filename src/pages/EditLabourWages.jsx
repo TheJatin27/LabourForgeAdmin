@@ -11,7 +11,8 @@ import {
   Calendar, 
   PlusCircle, 
   Trash2, 
-  Building2 
+  Building2,
+  Edit3
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -20,25 +21,32 @@ export default function EditLabourWages() {
   const navigate = useNavigate();
 
   const [state, setState] = useState("");
-  const [period, setPeriod] = useState(""); // Holds Year / Period
+  const [year, setYear] = useState(""); 
   const [documentUrl, setDocumentUrl] = useState("");
-  const [notes, setNotes] = useState(""); // Holds Compliance Notes / Remarks
-  const [headers, setHeaders] = useState([]); // Dynamic headers from database snapshot
-  const [wages, setWages] = useState([]); // Dynamic row objects
+  const [notes, setNotes] = useState(""); 
+  const [headers, setHeaders] = useState([]); 
+  const [wages, setWages] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   // --- District Schedule Modal & State ---
-  const [districts, setDistricts] = useState([]); // Array of attached district objects
+  const [districts, setDistricts] = useState([]); 
   const [isDistrictModalOpen, setIsDistrictModalOpen] = useState(false);
+  const [editingDistrictId, setEditingDistrictId] = useState(null);
 
   // District Form & Preview Inputs
   const [districtName, setDistrictName] = useState("");
-  const [districtValidFrom, setDistrictValidFrom] = useState("");
+  const [districtMonth, setDistrictMonth] = useState("January");
+  const [districtYear, setDistrictYear] = useState(new Date().getFullYear().toString());
   const [districtHeaders, setDistrictHeaders] = useState([]);
   const [districtWages, setDistrictWages] = useState([]);
   const [districtPreview, setDistrictPreview] = useState(false);
   const [districtParsing, setDistrictParsing] = useState(false);
+
+  const monthsList = [
+    "January", "February", "March", "April", "May", "June", 
+    "July", "August", "September", "October", "November", "December"
+  ];
 
   // FETCH DATA STREAM FROM FIRESTORE RECORD
   useEffect(() => {
@@ -50,13 +58,18 @@ export default function EditLabourWages() {
         if (snap.exists()) {
           const data = snap.data();
           setState(data.state || "");
-          setPeriod(data.period || "");
+          setYear(data.year || data.period || ""); 
           setDocumentUrl(data.documentUrl || "");
           setNotes(data.notes || "");
           setWages(data.wages || []);
-          setDistricts(data.districts || []); // Fetch stored district array
 
-          // Re-instantiate schema headers layout dynamically
+          // Ensure every fetched district has a stable String ID
+          const sanitizedDistricts = (data.districts || []).map((dist, idx) => ({
+            ...dist,
+            id: String(dist.id || `dist_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 7)}`)
+          }));
+          setDistricts(sanitizedDistricts); 
+
           if (data.headers) {
             setHeaders(data.headers);
           } else if (data.wages && data.wages.length > 0) {
@@ -116,35 +129,77 @@ export default function EditLabourWages() {
     setDistrictWages(copy);
   };
 
-  // Save new district into local state array
-  const handleAddDistrict = () => {
+  // Open modal to add a new district
+  const handleOpenAddDistrict = () => {
+    setEditingDistrictId(null);
+    setDistrictName("");
+    setDistrictMonth("January");
+    setDistrictYear(new Date().getFullYear().toString());
+    setDistrictHeaders([]);
+    setDistrictWages([]);
+    setDistrictPreview(false);
+    setIsDistrictModalOpen(true);
+  };
+
+  // Open modal to edit an existing district
+  const handleOpenEditDistrict = (item) => {
+    setEditingDistrictId(String(item.id));
+    setDistrictName(item.districtName || "");
+    setDistrictMonth(item.month || "January");
+    setDistrictYear(item.year || new Date().getFullYear().toString());
+    setDistrictHeaders(item.headers || []);
+    setDistrictWages(item.wages || []);
+    setDistrictPreview(true);
+    setIsDistrictModalOpen(true);
+  };
+
+  // Save or Update district in local state array
+  const handleSaveDistrict = () => {
     if (!districtName.trim()) return alert("Please enter a district name");
-    if (!districtValidFrom) return alert("Please enter 'Valid From' date");
-    if (districtWages.length === 0) return alert("Please upload a file for this district");
+    if (!districtMonth) return alert("Please select a month");
+    if (!districtYear.trim()) return alert("Please enter a year");
+    if (districtWages.length === 0) return alert("Please upload or provide data rows for this district");
 
-    const newDistrict = {
-      id: Date.now(),
-      districtName: districtName.trim(),
-      validFrom: districtValidFrom,
-      headers: districtHeaders,
-      wages: districtWages,
-    };
+    if (editingDistrictId) {
+      // Update existing district comparing String IDs
+      setDistricts(districts.map(d => String(d.id) === String(editingDistrictId) ? {
+        ...d,
+        districtName: districtName.trim(),
+        month: districtMonth,
+        year: districtYear.trim(),
+        headers: districtHeaders,
+        wages: districtWages
+      } : d));
+    } else {
+      // Add new district with a unique String ID
+      const newDistrict = {
+        id: `dist_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        districtName: districtName.trim(),
+        month: districtMonth,
+        year: districtYear.trim(),
+        headers: districtHeaders,
+        wages: districtWages,
+      };
+      setDistricts(prev => [...prev, newDistrict]);
+    }
 
-    setDistricts([...districts, newDistrict]);
     closeDistrictModal();
   };
 
   const closeDistrictModal = () => {
     setIsDistrictModalOpen(false);
+    setEditingDistrictId(null);
     setDistrictName("");
-    setDistrictValidFrom("");
+    setDistrictMonth("January");
+    setDistrictYear(new Date().getFullYear().toString());
     setDistrictHeaders([]);
     setDistrictWages([]);
     setDistrictPreview(false);
   };
 
-  const removeDistrict = (districtId) => {
-    setDistricts(districts.filter((d) => d.id !== districtId));
+  const removeDistrict = (districtId, e) => {
+    e.stopPropagation();
+    setDistricts(districts.filter((d) => String(d.id) !== String(districtId)));
   };
 
   // POST UPDATED DATA MATRICES BACK TO CLOUD DATABASE
@@ -153,8 +208,8 @@ export default function EditLabourWages() {
       alert("State field cannot be left blank");
       return;
     }
-    if (!period.trim()) {
-      alert("Please enter the Effective Period / Year context");
+    if (!year.trim()) {
+      alert("Please enter the Year context (e.g., 2026)");
       return;
     }
 
@@ -164,12 +219,12 @@ export default function EditLabourWages() {
 
       await updateDoc(ref, {
         state: state.trim(),
-        period: period.trim(),
+        year: year.trim(),
         documentUrl: documentUrl.trim(),
         notes: notes.trim(),
         headers,
         wages,
-        districts, // Syncs district schedules to Firestore
+        districts, // Stores full array of districts in Firestore
         updatedAt: new Date(),
       });
 
@@ -205,7 +260,7 @@ export default function EditLabourWages() {
         </div>
         <button
           type="button"
-          onClick={() => setIsDistrictModalOpen(true)}
+          onClick={handleOpenAddDistrict}
           className="flex items-center gap-2 bg-emerald-600 text-white font-semibold px-4 py-2 rounded-md hover:bg-emerald-700 shadow-sm transition-all text-sm"
         >
           <PlusCircle size={18} /> Add District / CPI Schedule
@@ -230,15 +285,15 @@ export default function EditLabourWages() {
             </div>
           </div>
 
-          {/* Dynamic Period Configuration Tracker */}
+          {/* Dynamic Year Configuration Tracker */}
           <div className="w-full">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Effective Period / Year</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Year</label>
             <div className="relative">
               <Calendar className="absolute left-3 top-3 text-gray-400" size={18} />
               <input
-                placeholder="e.g. 2026-2027"
-                value={period}
-                onChange={(e) => setPeriod(e.target.value)}
+                placeholder="e.g. 2026"
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none text-sm"
               />
             </div>
@@ -284,22 +339,34 @@ export default function EditLabourWages() {
           <h3 className="font-bold text-gray-800 text-md mb-3 flex items-center gap-2">
             <Building2 size={18} className="text-emerald-600" /> Attached District Schedules ({districts.length})
           </h3>
+          <p className="text-xs text-gray-500 mb-4">Click any card to view or modify its data schedule.</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {districts.map((item) => (
-              <div key={item.id} className="border border-emerald-200 bg-emerald-50/40 rounded-md p-3 flex justify-between items-center">
+              <div 
+                key={item.id} 
+                onClick={() => handleOpenEditDistrict(item)}
+                className="border border-emerald-200 bg-emerald-50/40 rounded-lg p-4 flex justify-between items-center cursor-pointer hover:bg-emerald-50 transition-all shadow-sm"
+              >
                 <div>
-                  <h4 className="font-semibold text-emerald-900 text-sm">{item.districtName}</h4>
-                  <p className="text-xs text-emerald-700">Valid From: {item.validFrom}</p>
-                  <p className="text-xs text-gray-500">{item.wages ? item.wages.length : 0} Rows</p>
+                  <h4 className="font-bold text-emerald-900 text-sm uppercase">{item.districtName}</h4>
+                  <p className="text-xs text-emerald-700 font-medium mt-0.5">
+                    Applicable: {item.month} {item.year}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">{item.wages ? item.wages.length : 0} Rows configured</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => removeDistrict(item.id)}
-                  className="text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-colors"
-                  title="Remove District"
-                >
-                  <Trash2 size={16} />
-                </button>
+                <div className="flex items-center gap-1">
+                  <span className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-full transition-colors" title="Modify District">
+                    <Edit3 size={16} />
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => removeDistrict(item.id, e)}
+                    className="text-red-500 hover:bg-red-100 p-1.5 rounded-full transition-colors"
+                    title="Remove District"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -371,7 +438,7 @@ export default function EditLabourWages() {
         </div>
       </div>
 
-      {/* --- Add District Popup Modal --- */}
+      {/* --- Add/Edit District Popup Modal --- */}
       {isDistrictModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl border border-gray-200 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -379,7 +446,8 @@ export default function EditLabourWages() {
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
               <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
-                <Building2 className="text-emerald-600" size={20} /> Add District / CPI Schedule
+                <Building2 className="text-emerald-600" size={20} /> 
+                {editingDistrictId ? "Modify District Schedule" : "Add District / CPI Schedule"}
               </h3>
               <button 
                 type="button"
@@ -392,34 +460,49 @@ export default function EditLabourWages() {
 
             {/* Modal Body */}
             <div className="p-6 overflow-y-auto flex-1">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 
                 {/* District Name */}
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase mb-1">District Name</label>
                   <input
                     type="text"
-                    placeholder="e.g. Ernakulam / Kollam"
+                    placeholder="e.g. Thiruvananthapuram"
                     value={districtName}
                     onChange={(e) => setDistrictName(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
 
-                {/* Valid From Date */}
+                {/* Applicable Month Selector */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Valid From / Effective Date</label>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Applicable Month</label>
+                  <select
+                    value={districtMonth}
+                    onChange={(e) => setDistrictMonth(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                  >
+                    {monthsList.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Applicable Year Input */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Applicable Year</label>
                   <input
-                    type="date"
-                    value={districtValidFrom}
-                    onChange={(e) => setDistrictValidFrom(e.target.value)}
+                    type="text"
+                    placeholder="e.g. 2026"
+                    value={districtYear}
+                    onChange={(e) => setDistrictYear(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
 
                 {/* Excel File Input */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Upload District Excel/CSV</label>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Upload/Replace Excel</label>
                   <input
                     type="file"
                     accept=".xlsx,.xls,.csv"
@@ -438,11 +521,11 @@ export default function EditLabourWages() {
                 </div>
               )}
 
-              {/* District Sheet Data Preview Grid */}
+              {/* District Sheet Data Preview & Modification Grid */}
               {districtPreview && districtHeaders.length > 0 && (
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
                   <div className="px-4 py-2 bg-emerald-50 border-b border-emerald-100 text-emerald-900 font-semibold text-xs flex justify-between">
-                    <span>Previewing: {districtName || "District Table"}</span>
+                    <span>Configuring Table: {districtName || "District Table"} ({districtMonth} {districtYear})</span>
                     <span>{districtWages.length} Rows</span>
                   </div>
                   <div className="overflow-x-auto max-h-[300px]">
@@ -487,10 +570,10 @@ export default function EditLabourWages() {
               </button>
               <button
                 type="button"
-                onClick={handleAddDistrict}
+                onClick={handleSaveDistrict}
                 className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded shadow-sm text-sm flex items-center gap-2"
               >
-                <CheckCircle size={16} /> Attach District Schedule
+                <CheckCircle size={16} /> {editingDistrictId ? "Update District Schedule" : "Attach District Schedule"}
               </button>
             </div>
           </div>

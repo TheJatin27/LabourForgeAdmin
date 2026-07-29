@@ -9,7 +9,9 @@ import {
   MapPin, 
   Calendar, 
   Layers,
-  Edit2
+  Edit2,
+  Building2,
+  ChevronRight
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -46,8 +48,8 @@ export default function ManageLabourWages() {
   }, []);
 
   // DELETE ENTRY PIPELINE
-  const handleDelete = async (id, stateName) => {
-    if (!window.confirm(`Are you sure you want to permanently delete the wage data for ${stateName}?`)) {
+  const handleDelete = async (id, stateName, year) => {
+    if (!window.confirm(`Are you sure you want to permanently delete the wage data for ${stateName} (${year || "N/A"})?`)) {
       return;
     }
 
@@ -55,7 +57,6 @@ export default function ManageLabourWages() {
       setDeletingId(id);
       await deleteDoc(doc(db, "minimumWages", id));
       alert(`${stateName} entry deleted successfully.`);
-      // Update local state filter array directly to skip extra fetch network request
       setWageEntries((prev) => prev.filter((item) => item.id !== id));
     } catch (err) {
       console.error(err);
@@ -65,9 +66,23 @@ export default function ManageLabourWages() {
     }
   };
 
-  // SEARCH FILTER LOGIC
-  const filteredEntries = wageEntries.filter((entry) =>
-    entry.state?.toLowerCase().includes(searchTerm.toLowerCase())
+  // GROUP ENTRIES BY STATE NAME
+  const groupedStates = wageEntries.reduce((acc, entry) => {
+    const stateName = (entry.state || "Unknown State").trim().toUpperCase();
+    if (!acc[stateName]) {
+      acc[stateName] = {
+        stateName,
+        records: []
+      };
+    }
+    acc[stateName].records.push(entry);
+    return acc;
+  }, {});
+
+  // Convert grouped object back to array and filter by search term
+  const filteredStateGroups = Object.values(groupedStates).filter((group) =>
+    group.stateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    group.records.some(r => (r.year || r.period || "").toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   if (loading) {
@@ -88,7 +103,7 @@ export default function ManageLabourWages() {
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold text-slate-800">Manage Minimum Wages</h2>
-          <p className="text-slate-500 mt-1">Review, track or delete published regional statutory scale entries.</p>
+          <p className="text-slate-500 mt-1">Review, track or manage regional statutory scale entries grouped by State.</p>
         </div>
         
         {/* Dynamic Search Controller */}
@@ -96,7 +111,7 @@ export default function ManageLabourWages() {
           <Search className="absolute left-3.5 top-3.5 text-slate-400" size={16} />
           <input
             type="text"
-            placeholder="Filter by State Name..."
+            placeholder="Filter by State Name or Year..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none shadow-sm focus:border-blue-500 transition-all text-sm"
@@ -105,7 +120,7 @@ export default function ManageLabourWages() {
       </div>
 
       {/* RENDER LOGIC */}
-      {filteredEntries.length === 0 ? (
+      {filteredStateGroups.length === 0 ? (
         <div className="bg-white rounded-3xl border border-slate-200 p-16 text-center shadow-sm">
           <MapPin className="mx-auto text-slate-300 mb-4" size={48} />
           <h3 className="text-lg font-bold text-slate-700">No Datasets Found</h3>
@@ -115,80 +130,91 @@ export default function ManageLabourWages() {
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredEntries.map((entry) => {
-            const formattedDate = entry.createdAt?.seconds 
-              ? new Date(entry.createdAt.seconds * 1000).toLocaleDateString("en-IN", {
-                  day: "numeric", month: "short", year: "numeric"
-                })
-              : "N/A";
-
+          {filteredStateGroups.map((group) => {
             return (
               <div 
-                key={entry.id} 
-                className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-md transition-all group"
+                key={group.stateName} 
+                className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all group"
               >
-                {/* Meta details segment */}
-                <div className="flex items-start gap-4">
-                  <div className="p-3.5 bg-orange-50 rounded-xl text-orange-600 shadow-sm flex-shrink-0 group-hover:bg-orange-500 group-hover:text-white transition-all">
-                    <MapPin size={24} />
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-xl font-bold text-slate-800 tracking-tight uppercase">
-                      {entry.state}
-                    </h3>
-                    
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 font-medium">
-                      <span className="flex items-center gap-1">
-                        <Layers size={14} className="text-slate-300" />
-                        {entry.wages?.length || 0} Labour Classes Listed
-                      </span>
-                      <span className="hidden sm:inline text-slate-200">•</span>
-                      <span className="flex items-center gap-1">
-                        <Calendar size={14} className="text-slate-300" />
-                        Imported on {formattedDate}
-                      </span>
+                {/* State Card Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3.5 bg-orange-50 rounded-xl text-orange-600 shadow-sm flex-shrink-0 group-hover:bg-orange-500 group-hover:text-white transition-all">
+                      <MapPin size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-800 tracking-tight uppercase">
+                        {group.stateName}
+                      </h3>
+                      <p className="text-xs text-slate-400 font-medium mt-0.5">
+                        {group.records.length} Year Configuration{group.records.length > 1 ? "s" : ""} Available
+                      </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Document links and Actions Panel */}
-                <div className="flex items-center justify-end gap-3 border-t border-slate-50 pt-4 md:pt-0 md:border-none">
-                  
-                  {/* EDIT BUTTON INTEGRATION */}
-                  <button
-                    onClick={() => navigate(`/admin/labour-wages/edit/${entry.id}`)}
-                    className="flex items-center gap-2 border border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-400 bg-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all"
-                  >
-                    <Edit2 size={14} /> Edit
-                  </button>
+                {/* Years Breakdown List inside the State Card */}
+                <div className="divide-y divide-slate-100 mt-2">
+                  {group.records.map((entry) => {
+                    const entryYear = entry.year || entry.period || "N/A";
+                    const formattedDate = entry.createdAt?.seconds 
+                      ? new Date(entry.createdAt.seconds * 1000).toLocaleDateString("en-IN", {
+                          day: "numeric", month: "short", year: "numeric"
+                        })
+                      : "N/A";
 
-                  {entry.documentUrl ? (
-                    <a
-                      href={entry.documentUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-2 border border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-400 bg-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all"
-                    >
-                      <ExternalLink size={14} /> Open Official Act URL
-                    </a>
-                  ) : (
-                    <span className="text-slate-300 text-xs font-semibold select-none px-2">
-                      No URL Linked
-                    </span>
-                  )}
+                    return (
+                      <div key={entry.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 first:pt-2 last:pb-0">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <span className="bg-blue-50 text-blue-700 font-extrabold text-xs px-3 py-1 rounded-lg border border-blue-100 flex items-center gap-1.5">
+                            <Calendar size={13} /> Year: {entryYear}
+                          </span>
+                          <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
+                            <Layers size={13} className="text-slate-300" /> {entry.wages?.length || 0} Labour Classes
+                          </span>
+                          <span className="text-slate-200 hidden md:inline">•</span>
+                          <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
+                            <Building2 size={13} className="text-emerald-500" /> {entry.districts?.length || 0} Districts
+                          </span>
+                        </div>
 
-                  <button
-                    onClick={() => handleDelete(entry.id, entry.state)}
-                    disabled={deletingId === entry.id}
-                    className="flex items-center gap-2 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white px-4 py-2.5 rounded-xl font-bold text-xs transition-all disabled:opacity-50"
-                  >
-                    {deletingId === entry.id ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : (
-                      <Trash2 size={14} />
-                    )}
-                    Delete Record
-                  </button>
+                        {/* Action Buttons for this specific Year record */}
+                        <div className="flex items-center gap-2.5 justify-end">
+                          {entry.documentUrl && (
+                            <a
+                              href={entry.documentUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="p-2 border border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-400 bg-white rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1"
+                              title="Open Official Act URL"
+                            >
+                              <ExternalLink size={13} /> <span className="hidden xl:inline">Act URL</span>
+                            </a>
+                          )}
+
+                          <button
+                            onClick={() => navigate(`/admin/labour-wages/edit/${entry.id}`)}
+                            className="flex items-center gap-1.5 border border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-400 bg-white px-3.5 py-2 rounded-lg font-bold text-xs shadow-sm transition-all"
+                          >
+                            <Edit2 size={13} /> Edit Year ({entryYear})
+                          </button>
+
+                          <button
+                            onClick={() => handleDelete(entry.id, group.stateName, entryYear)}
+                            disabled={deletingId === entry.id}
+                            className="flex items-center gap-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white px-3.5 py-2 rounded-lg font-bold text-xs transition-all disabled:opacity-50"
+                          >
+                            {deletingId === entry.id ? (
+                              <Loader2 size={13} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={13} />
+                            )}
+                            <span className="hidden sm:inline">Delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
               </div>

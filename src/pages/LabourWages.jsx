@@ -18,7 +18,7 @@ import {
 export default function LabourWages() {
   const [state, setState] = useState("");
   const [documentUrl, setDocumentUrl] = useState("");
-  const [period, setPeriod] = useState("");
+  const [year, setYear] = useState(new Date().getFullYear().toString()); // Year dropdown state
   const [notes, setNotes] = useState("");
   const [headers, setHeaders] = useState([]);
   const [wages, setWages] = useState([]);
@@ -31,10 +31,18 @@ export default function LabourWages() {
   
   // District form inputs
   const [districtName, setDistrictName] = useState("");
-  const [districtValidFrom, setDistrictValidFrom] = useState("");
+  const [districtMonth, setDistrictMonth] = useState("January"); // District Month dropdown
+  const [districtYear, setDistrictYear] = useState(new Date().getFullYear().toString()); // District Year dropdown
   const [districtHeaders, setDistrictHeaders] = useState([]);
   const [districtWages, setDistrictWages] = useState([]);
   const [districtPreview, setDistrictPreview] = useState(false);
+
+  // Available Years list for dropdowns
+  const availableYears = ["2024", "2025", "2026", "2027", "2028"];
+  const availableMonths = [
+    "January", "February", "March", "April", "May", "June", 
+    "July", "August", "September", "October", "November", "December"
+  ];
 
   // Main file upload parser (Optional)
   const handleUpload = async (e) => {
@@ -103,13 +111,15 @@ export default function LabourWages() {
   // Add parsed district to the main state array
   const handleSaveDistrict = () => {
     if (!districtName) return alert("Please enter the district name");
-    if (!districtValidFrom) return alert("Please enter the 'Valid From' date");
+    if (!districtMonth) return alert("Please select the month");
+    if (!districtYear) return alert("Please select the year");
     if (districtWages.length === 0) return alert("Please upload a file for this district");
 
     const newDistrict = {
       id: Date.now(),
       districtName: districtName.trim(),
-      validFrom: districtValidFrom,
+      month: districtMonth,
+      year: districtYear,
       headers: districtHeaders,
       wages: districtWages,
     };
@@ -121,7 +131,8 @@ export default function LabourWages() {
   const closeDistrictModal = () => {
     setIsDistrictModalOpen(false);
     setDistrictName("");
-    setDistrictValidFrom("");
+    setDistrictMonth("January");
+    setDistrictYear(new Date().getFullYear().toString());
     setDistrictHeaders([]);
     setDistrictWages([]);
     setDistrictPreview(false);
@@ -131,21 +142,21 @@ export default function LabourWages() {
     setDistricts(districts.filter((d) => d.id !== id));
   };
 
-  // Publish state data (with or without master Excel file) + district arrays to Firestore
+  // Publish state data + district arrays to Firestore
   const publish = async () => {
     if (!state.trim()) return alert("Please select or enter a state");
-    if (!period.trim()) return alert("Please enter the Year / Period (e.g., 2026)");
+    if (!year.trim()) return alert("Please select a Year");
 
     try {
       setLoading(true);
       await addDoc(collection(db, "minimumWages"), {
         state: state.trim(),
-        period: period.trim(),
+        year: year.trim(), // Storing structured year parameter
         documentUrl: documentUrl.trim(),
         notes: notes.trim(),
-        headers: headers || [], // Defaults to empty array if no state Excel was uploaded
-        wages: wages || [],     // Defaults to empty array if no state Excel was uploaded
-        districts,             // Array of district breakdown tables
+        headers: headers || [], 
+        wages: wages || [],     
+        districts,             // Array of district breakdown tables containing month/year properties
         createdAt: new Date(),
       });
 
@@ -156,7 +167,6 @@ export default function LabourWages() {
       setDistricts([]);
       setState("");
       setDocumentUrl("");
-      setPeriod("");
       setNotes("");
     } catch (err) {
       console.error(err);
@@ -182,10 +192,9 @@ export default function LabourWages() {
             <PlusCircle size={18} /> Add District Wage / CPI
           </button>
           
-          {/* Direct Publish Button for States Without Excel Upload */}
           <button
             onClick={publish}
-            disabled={!state || !period || loading}
+            disabled={!state || !year || loading}
             className="flex items-center gap-2 bg-blue-600 text-white font-semibold px-5 py-2 rounded-md hover:bg-blue-700 shadow-sm transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send size={16} /> Save State Record
@@ -211,17 +220,20 @@ export default function LabourWages() {
             </div>
           </div>
 
-          {/* Year / Period */}
+          {/* Year Dropdown */}
           <div className="w-full">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Year / Period *</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Select Year *</label>
             <div className="relative">
-              <Calendar className="absolute left-3 top-3 text-gray-400" size={18} />
-              <input
-                placeholder="e.g. 2026 (Jan-Jun)"
-                value={period}
-                onChange={(e) => setPeriod(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <Calendar className="absolute left-3 top-3 text-gray-400 pointer-events-none" size={18} />
+              <select
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                {availableYears.map((yr) => (
+                  <option key={yr} value={yr}>{yr}</option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -284,7 +296,7 @@ export default function LabourWages() {
               <div key={item.id} className="border border-emerald-200 bg-emerald-50/40 rounded-md p-3 flex justify-between items-center">
                 <div>
                   <h4 className="font-semibold text-emerald-900 text-sm">{item.districtName}</h4>
-                  <p className="text-xs text-emerald-700">Valid From: {item.validFrom}</p>
+                  <p className="text-xs text-emerald-700">Period: {item.month} {item.year}</p>
                   <p className="text-xs text-gray-500">{item.wages.length} rows imported</p>
                 </div>
                 <button
@@ -299,11 +311,11 @@ export default function LabourWages() {
         </div>
       )}
 
-      {/* Master Data Preview Table (Renders only if Master File is uploaded) */}
+      {/* Master Data Preview Table */}
       {preview && headers.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden mb-8">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-            <h3 className="font-bold text-gray-700">Master State Sheet Preview: {state} ({period})</h3>
+            <h3 className="font-bold text-gray-700">Master State Sheet Preview: {state} ({year})</h3>
             <span className="text-xs font-mono text-gray-500">{wages.length} Rows × {headers.length} Columns</span>
           </div>
 
@@ -374,29 +386,46 @@ export default function LabourWages() {
 
             {/* Modal Content */}
             <div className="p-6 overflow-y-auto flex-1">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 
                 {/* District Name */}
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase mb-1">District Name *</label>
                   <input
                     type="text"
-                    placeholder="e.g. Thiruvananthapuram"
+                    placeholder="e.g. Gurgaon"
                     value={districtName}
                     onChange={(e) => setDistrictName(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
 
-                {/* Valid From Date */}
+                {/* District Month Dropdown */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Valid From / Effective Date *</label>
-                  <input
-                    type="date"
-                    value={districtValidFrom}
-                    onChange={(e) => setDistrictValidFrom(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Select Month *</label>
+                  <select
+                    value={districtMonth}
+                    onChange={(e) => setDistrictMonth(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                  >
+                    {availableMonths.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* District Year Dropdown */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Select Year *</label>
+                  <select
+                    value={districtYear}
+                    onChange={(e) => setDistrictYear(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                  >
+                    {availableYears.map((yr) => (
+                      <option key={yr} value={yr}>{yr}</option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* File Upload */}
@@ -415,7 +444,7 @@ export default function LabourWages() {
               {districtPreview && districtHeaders.length > 0 && (
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
                   <div className="px-4 py-2 bg-emerald-50 border-b border-emerald-100 text-emerald-900 font-semibold text-xs flex justify-between">
-                    <span>Previewing: {districtName || "District Data"}</span>
+                    <span>Previewing: {districtName || "District Data"} ({districtMonth} {districtYear})</span>
                     <span>{districtWages.length} Rows</span>
                   </div>
                   <div className="overflow-x-auto max-h-[300px]">
