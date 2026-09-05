@@ -17,8 +17,9 @@ import {
 
 export default function LabourWages() {
   const [state, setState] = useState("");
+  const [month, setMonth] = useState("January"); // Added State Month selector
+  const [year, setYear] = useState(new Date().getFullYear().toString());
   const [documentUrl, setDocumentUrl] = useState("");
-  const [year, setYear] = useState(new Date().getFullYear().toString()); // Year dropdown state
   const [notes, setNotes] = useState("");
   const [headers, setHeaders] = useState([]);
   const [wages, setWages] = useState([]);
@@ -26,25 +27,25 @@ export default function LabourWages() {
   const [loading, setLoading] = useState(false);
 
   // --- District Modal & Data State ---
-  const [districts, setDistricts] = useState([]); // Saved district breakdown array
+  const [districts, setDistricts] = useState([]);
   const [isDistrictModalOpen, setIsDistrictModalOpen] = useState(false);
   
   // District form inputs
   const [districtName, setDistrictName] = useState("");
-  const [districtMonth, setDistrictMonth] = useState("January"); // District Month dropdown
-  const [districtYear, setDistrictYear] = useState(new Date().getFullYear().toString()); // District Year dropdown
+  const [districtMonth, setDistrictMonth] = useState("January");
+  const [districtYear, setDistrictYear] = useState(new Date().getFullYear().toString());
   const [districtHeaders, setDistrictHeaders] = useState([]);
   const [districtWages, setDistrictWages] = useState([]);
   const [districtPreview, setDistrictPreview] = useState(false);
 
-  // Available Years list for dropdowns
+  // Available dropdown options
   const availableYears = ["2024", "2025", "2026", "2027", "2028"];
   const availableMonths = [
     "January", "February", "March", "April", "May", "June", 
     "July", "August", "September", "October", "November", "December"
   ];
 
-  // Main file upload parser (Optional)
+  // Main file upload parser
   const handleUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -108,7 +109,7 @@ export default function LabourWages() {
     setDistrictWages(copy);
   };
 
-  // Add parsed district to the main state array
+  // Add parsed district to main state array
   const handleSaveDistrict = () => {
     if (!districtName) return alert("Please enter the district name");
     if (!districtMonth) return alert("Please select the month");
@@ -145,18 +146,20 @@ export default function LabourWages() {
   // Publish state data + district arrays to Firestore
   const publish = async () => {
     if (!state.trim()) return alert("Please select or enter a state");
+    if (!month.trim()) return alert("Please select a Month");
     if (!year.trim()) return alert("Please select a Year");
 
     try {
       setLoading(true);
       await addDoc(collection(db, "minimumWages"), {
         state: state.trim(),
-        year: year.trim(), // Storing structured year parameter
+        month: month.trim(),
+        year: year.trim(),
         documentUrl: documentUrl.trim(),
         notes: notes.trim(),
         headers: headers || [], 
         wages: wages || [],     
-        districts,             // Array of district breakdown tables containing month/year properties
+        districts,             
         createdAt: new Date(),
       });
 
@@ -166,6 +169,7 @@ export default function LabourWages() {
       setHeaders([]);
       setDistricts([]);
       setState("");
+      setMonth("January");
       setDocumentUrl("");
       setNotes("");
     } catch (err) {
@@ -194,7 +198,7 @@ export default function LabourWages() {
           
           <button
             onClick={publish}
-            disabled={!state || !year || loading}
+            disabled={!state || !year || !month || loading}
             className="flex items-center gap-2 bg-blue-600 text-white font-semibold px-5 py-2 rounded-md hover:bg-blue-700 shadow-sm transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send size={16} /> Save State Record
@@ -204,7 +208,7 @@ export default function LabourWages() {
 
       {/* Main Form Panel */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end mb-6">
           
           {/* State Name */}
           <div className="w-full">
@@ -217,6 +221,23 @@ export default function LabourWages() {
                 onChange={(e) => setState(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+          </div>
+
+          {/* Month Dropdown */}
+          <div className="w-full">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Select Month *</label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-3 text-gray-400 pointer-events-none" size={18} />
+              <select
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                {availableMonths.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -237,7 +258,7 @@ export default function LabourWages() {
             </div>
           </div>
 
-          {/* Gazette URL */}
+          {/* Official Gazette URL */}
           <div className="w-full">
             <label className="block text-sm font-semibold text-gray-700 mb-2">Official Gazette URL</label>
             <div className="relative">
@@ -252,7 +273,7 @@ export default function LabourWages() {
             </div>
           </div>
 
-          {/* Master File Selector (Optional) */}
+          {/* Master File Selector */}
           <div className="w-full">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Upload Master Excel / CSV <span className="text-xs font-normal text-gray-400">(Optional)</span>
@@ -315,7 +336,9 @@ export default function LabourWages() {
       {preview && headers.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden mb-8">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-            <h3 className="font-bold text-gray-700">Master State Sheet Preview: {state} ({year})</h3>
+            <h3 className="font-bold text-gray-700">
+              Master State Sheet Preview: {state} ({month} {year})
+            </h3>
             <span className="text-xs font-mono text-gray-500">{wages.length} Rows × {headers.length} Columns</span>
           </div>
 

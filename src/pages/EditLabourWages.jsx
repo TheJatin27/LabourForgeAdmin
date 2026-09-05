@@ -21,6 +21,7 @@ export default function EditLabourWages() {
   const navigate = useNavigate();
 
   const [state, setState] = useState("");
+  const [month, setMonth] = useState("January"); // Added State-level month selector
   const [year, setYear] = useState(""); 
   const [documentUrl, setDocumentUrl] = useState("");
   const [notes, setNotes] = useState(""); 
@@ -58,6 +59,7 @@ export default function EditLabourWages() {
         if (snap.exists()) {
           const data = snap.data();
           setState(data.state || "");
+          setMonth(data.month || "January"); // Populates saved month or falls back to January
           setYear(data.year || data.period || ""); 
           setDocumentUrl(data.documentUrl || "");
           setNotes(data.notes || "");
@@ -161,7 +163,6 @@ export default function EditLabourWages() {
     if (districtWages.length === 0) return alert("Please upload or provide data rows for this district");
 
     if (editingDistrictId) {
-      // Update existing district comparing String IDs
       setDistricts(districts.map(d => String(d.id) === String(editingDistrictId) ? {
         ...d,
         districtName: districtName.trim(),
@@ -171,7 +172,6 @@ export default function EditLabourWages() {
         wages: districtWages
       } : d));
     } else {
-      // Add new district with a unique String ID
       const newDistrict = {
         id: `dist_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         districtName: districtName.trim(),
@@ -208,6 +208,10 @@ export default function EditLabourWages() {
       alert("State field cannot be left blank");
       return;
     }
+    if (!month.trim()) {
+      alert("Please select a month");
+      return;
+    }
     if (!year.trim()) {
       alert("Please enter the Year context (e.g., 2026)");
       return;
@@ -219,12 +223,13 @@ export default function EditLabourWages() {
 
       await updateDoc(ref, {
         state: state.trim(),
+        month: month.trim(),
         year: year.trim(),
         documentUrl: documentUrl.trim(),
         notes: notes.trim(),
         headers,
         wages,
-        districts, // Stores full array of districts in Firestore
+        districts,
         updatedAt: new Date(),
       });
 
@@ -269,7 +274,7 @@ export default function EditLabourWages() {
 
       {/* Input Metadata Control Panel */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-6">
           
           {/* State Name Field */}
           <div className="w-full">
@@ -282,6 +287,23 @@ export default function EditLabourWages() {
                 onChange={(e) => setState(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none text-sm"
               />
+            </div>
+          </div>
+
+          {/* Month Selector Dropdown */}
+          <div className="w-full">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Select Month</label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-3 text-gray-400 pointer-events-none" size={18} />
+              <select
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white"
+              >
+                {monthsList.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -376,7 +398,9 @@ export default function EditLabourWages() {
       {/* Master Dynamic Schema Grid Table */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden mb-8">
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-          <h3 className="font-bold text-gray-700">Wage Value Matrices Map</h3>
+          <h3 className="font-bold text-gray-700">
+            Wage Value Matrices Map: {state ? `${state} (${month} ${year})` : ""}
+          </h3>
           <span className="text-xs font-mono text-gray-500">{wages.length} Categories Configured</span>
         </div>
 

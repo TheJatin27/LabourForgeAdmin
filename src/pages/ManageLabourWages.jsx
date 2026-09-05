@@ -48,15 +48,16 @@ export default function ManageLabourWages() {
   }, []);
 
   // DELETE ENTRY PIPELINE
-  const handleDelete = async (id, stateName, year) => {
-    if (!window.confirm(`Are you sure you want to permanently delete the wage data for ${stateName} (${year || "N/A"})?`)) {
+  const handleDelete = async (id, stateName, month, year) => {
+    const periodLabel = [month, year].filter(Boolean).join(" ") || "N/A";
+    if (!window.confirm(`Are you sure you want to permanently delete the wage data for ${stateName} (${periodLabel})?`)) {
       return;
     }
 
     try {
       setDeletingId(id);
       await deleteDoc(doc(db, "minimumWages", id));
-      alert(`${stateName} entry deleted successfully.`);
+      alert(`${stateName} (${periodLabel}) entry deleted successfully.`);
       setWageEntries((prev) => prev.filter((item) => item.id !== id));
     } catch (err) {
       console.error(err);
@@ -79,22 +80,18 @@ export default function ManageLabourWages() {
     return acc;
   }, {});
 
-  // Convert grouped object back to array and filter by search term
-  const filteredStateGroups = Object.values(groupedStates).filter((group) =>
-    group.stateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    group.records.some(r => (r.year || r.period || "").toLowerCase().includes(searchTerm.toLowerCase()))
-  );
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="animate-spin text-[#0B1538]" size={40} />
-          <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Syncing Datasets...</p>
-        </div>
-      </div>
-    );
-  }
+  // Convert grouped object back to array and filter by State, Month, or Year
+  const filteredStateGroups = Object.values(groupedStates).filter((group) => {
+    const query = searchTerm.toLowerCase();
+    const stateMatches = group.stateName.toLowerCase().includes(query);
+    const recordMatches = group.records.some((r) => {
+      const entryYear = (r.year || r.period || "").toLowerCase();
+      const entryMonth = (r.month || "").toLowerCase();
+      const combinedPeriod = `${entryMonth} ${entryYear}`;
+      return entryYear.includes(query) || entryMonth.includes(query) || combinedPeriod.includes(query);
+    });
+    return stateMatches || recordMatches;
+  });
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-sans text-slate-800">
@@ -111,7 +108,7 @@ export default function ManageLabourWages() {
           <Search className="absolute left-3.5 top-3.5 text-slate-400" size={16} />
           <input
             type="text"
-            placeholder="Filter by State Name or Year..."
+            placeholder="Filter by State, Month, or Year..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none shadow-sm focus:border-blue-500 transition-all text-sm"
@@ -120,12 +117,19 @@ export default function ManageLabourWages() {
       </div>
 
       {/* RENDER LOGIC */}
-      {filteredStateGroups.length === 0 ? (
+      {loading ? (
+        <div className="min-h-[50vh] flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="animate-spin text-[#0B1538]" size={40} />
+            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Syncing Datasets...</p>
+          </div>
+        </div>
+      ) : filteredStateGroups.length === 0 ? (
         <div className="bg-white rounded-3xl border border-slate-200 p-16 text-center shadow-sm">
           <MapPin className="mx-auto text-slate-300 mb-4" size={48} />
           <h3 className="text-lg font-bold text-slate-700">No Datasets Found</h3>
           <p className="text-slate-400 text-sm mt-1 max-w-sm mx-auto">
-            {searchTerm ? "No matching records found for this search string filter." : "Get started by importing standard data structures from the Labour Wages tab."}
+            {searchTerm ? "No matching records found for this search filter." : "Get started by importing standard data structures from the Labour Wages tab."}
           </p>
         </div>
       ) : (
@@ -147,27 +151,24 @@ export default function ManageLabourWages() {
                         {group.stateName}
                       </h3>
                       <p className="text-xs text-slate-400 font-medium mt-0.5">
-                        {group.records.length} Year Configuration{group.records.length > 1 ? "s" : ""} Available
+                        {group.records.length} Scheduled Record{group.records.length > 1 ? "s" : ""} Available
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Years Breakdown List inside the State Card */}
+                {/* Periods Breakdown List inside State Card */}
                 <div className="divide-y divide-slate-100 mt-2">
                   {group.records.map((entry) => {
-                    const entryYear = entry.year || entry.period || "N/A";
-                    const formattedDate = entry.createdAt?.seconds 
-                      ? new Date(entry.createdAt.seconds * 1000).toLocaleDateString("en-IN", {
-                          day: "numeric", month: "short", year: "numeric"
-                        })
-                      : "N/A";
+                    const entryYear = entry.year || entry.period || "";
+                    const entryMonth = entry.month || "";
+                    const displayPeriod = [entryMonth, entryYear].filter(Boolean).join(" ") || "N/A";
 
                     return (
                       <div key={entry.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 first:pt-2 last:pb-0">
                         <div className="flex flex-wrap items-center gap-3">
                           <span className="bg-blue-50 text-blue-700 font-extrabold text-xs px-3 py-1 rounded-lg border border-blue-100 flex items-center gap-1.5">
-                            <Calendar size={13} /> Year: {entryYear}
+                            <Calendar size={13} /> {displayPeriod}
                           </span>
                           <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
                             <Layers size={13} className="text-slate-300" /> {entry.wages?.length || 0} Labour Classes
@@ -178,7 +179,7 @@ export default function ManageLabourWages() {
                           </span>
                         </div>
 
-                        {/* Action Buttons for this specific Year record */}
+                        {/* Action Buttons */}
                         <div className="flex items-center gap-2.5 justify-end">
                           {entry.documentUrl && (
                             <a
@@ -196,11 +197,11 @@ export default function ManageLabourWages() {
                             onClick={() => navigate(`/admin/labour-wages/edit/${entry.id}`)}
                             className="flex items-center gap-1.5 border border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-400 bg-white px-3.5 py-2 rounded-lg font-bold text-xs shadow-sm transition-all"
                           >
-                            <Edit2 size={13} /> Edit Year ({entryYear})
+                            <Edit2 size={13} /> Edit ({displayPeriod})
                           </button>
 
                           <button
-                            onClick={() => handleDelete(entry.id, group.stateName, entryYear)}
+                            onClick={() => handleDelete(entry.id, group.stateName, entryMonth, entryYear)}
                             disabled={deletingId === entry.id}
                             className="flex items-center gap-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white px-3.5 py-2 rounded-lg font-bold text-xs transition-all disabled:opacity-50"
                           >
